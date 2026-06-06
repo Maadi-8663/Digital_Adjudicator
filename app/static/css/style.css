@@ -1465,13 +1465,383 @@ main { flex: 1; }
   margin: 0;
 }
 
-/* ===== Responsive niceties ===== */
+/* ===========================================================
+   Responsive
+   - Tablet:  ≤ 900 px
+   - Mobile:  ≤ 760 px
+   - Phone:   ≤ 480 px
+   =========================================================== */
+
+@media (max-width: 900px) {
+  .comp-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+  .container { padding: 1.8rem 1.6rem; }
+  .public-hero h1 { font-size: 3.6rem; }
+  .public-hero__logo img { height: 90px; }
+}
+
+/* ===== Mobile / phones ≤ 760 px ===== */
 @media (max-width: 760px) {
-  .navbar { padding: 1rem 1.2rem; }
-  .navbar .brand-sub { display: none; }
-  .container { padding: 1.4rem; }
-  .card { padding: 2.2rem 1.6rem; }
-  .form-row { grid-template-columns: 1fr; }
-  h1 { font-size: 2.6rem; }
-  .hero h1 { font-size: 3.4rem; }
+  /* ----- Typography ----- */
+  html { font-size: 15px; }
+  h1 { font-size: 2.4rem; }
+  h2 { font-size: 1.9rem; }
+  h3 { font-size: 1.5rem; }
+  h4 { font-size: 1.2rem; }
+  p  { font-size: 1.05rem; }
+
+  /* ----- Navbar ----- */
+  .navbar {
+    padding: 0.8rem 1rem;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+  .navbar .brand {
+    gap: 0.5rem;
+    font-size: 1.15rem;
+  }
+  .navbar .brand .brand-logo {
+    height: 30px;
+  }
+  .navbar .brand .brand-sub { display: none; }
+  .navbar nav {
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    width: 100%;
+    margin-top: 0.3rem;
+  }
+  .navbar nav a {
+    font-size: 0.7rem;
+    margin-left: 0;
+    letter-spacing: 0.1em;
+  }
+  .navbar nav .user-name { display: none; }
+
+  /* ----- Containers ----- */
+  .container { padding: 1.2rem 1rem; }
+  .container--narrow,
+  .container--tight { padding: 1.2rem 1rem; }
+
+  /* ----- Cards ----- */
+  .card { padding: 1.8rem 1.4rem; }
+  .card::before, .card::after { width: 18px; height: 18px; top: 8px; }
+  .card::before { left: 8px; }
+  .card::after  { right: 8px; }
+  .card-title { font-size: 1.8rem; }
+  .card-subtitle { font-size: 1rem; }
+  .card--soft { padding: 1.4rem 1.2rem; }
+
+  /* ----- Public hero ----- */
+  .public-hero { padding: 2.4rem 1rem 1.6rem; }
+  .public-hero__logo img { height: 70px; }
+  .public-hero h1 { font-size: 2.6rem; }
+  .public-hero__tagline { font-size: 1.15rem; }
+  .public-hero__sub { font-size: 0.95rem; }
+
+  /* ----- Dashboard greeting ----- */
+  .dashboard-greeting { padding: 1.8rem 0.5rem 1.2rem; }
+  .dashboard-greeting h1 { font-size: 2.2rem; }
+  .dashboard-greeting .quote { font-size: 1rem; }
+
+  /* ----- Comp hero (detail pages) ----- */
+  .comp-hero { padding: 1.4rem 0 1rem; }
+  .comp-hero h1 { font-size: 2.2rem; }
+  .comp-hero__meta {
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    justify-content: center;
+  }
+
+  /* ----- Section bar ----- */
+  .section-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.7rem;
+    margin-top: 2rem;
+  }
+  .section-bar > .btn,
+  .section-bar > a.btn,
+  .section-bar > form,
+  .section-bar > .btn-row {
+    width: 100%;
+  }
+  .section-bar > .btn-row { display: flex; gap: 0.6rem; }
+  .section-bar > .btn-row .btn { flex: 1; }
+  .section-title { font-size: 1.45rem; }
+
+  /* ----- Forms ----- */
+  .form-row { grid-template-columns: 1fr; gap: 0.7rem; }
+  .form-group label { font-size: 0.68rem; }
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    padding: 0.9rem 1rem;
+    font-size: 1.02rem;
+  }
+
+  /* ----- Buttons ----- */
+  .btn { padding: 0.95rem 1.6rem; font-size: 1rem; }
+  .btn-compact { padding: 0.65rem 1.3rem; font-size: 0.92rem; }
+  .btn-row {
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .btn-row .btn { width: 100%; }
+
+  /* ----- Comp grid ----- */
+  .comp-grid { grid-template-columns: 1fr; gap: 0.9rem; }
+  .comp-card { padding: 1.4rem 1.4rem; }
+  .comp-card__title { font-size: 1.35rem; padding-right: 4.5rem; }
+
+  /* ----- Stats grid ----- */
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.7rem;
+  }
+  .stat { padding: 1rem 0.5rem; }
+  .stat__value { font-size: 2rem; }
+
+  /* ----- My apps grid ----- */
+  .my-apps-grid { grid-template-columns: 1fr; }
+
+  /* ----- Round rows / module rows ----- */
+  .round-row {
+    grid-template-columns: 40px 1fr;
+    gap: 0.7rem;
+    padding: 0.9rem 1rem;
+    row-gap: 0.5rem;
+  }
+  .round-row__num {
+    width: 38px; height: 38px; font-size: 1.05rem;
+  }
+  .round-row__meta {
+    grid-column: 1 / -1;
+    text-align: left;
+  }
+  .round-row__title {
+    font-size: 1.05rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  /* ----- Field rows ----- */
+  .field-row {
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+    padding: 0.9rem 1rem;
+  }
+  .field-row__type {
+    font-size: 0.62rem;
+    color: var(--gold);
+  }
+  .field-row__label { font-size: 1rem; }
+  .field-row__meta {
+    font-size: 0.78rem;
+    margin-top: 0.4rem;
+  }
+
+  /* ----- Public modules ----- */
+  .public-module { padding: 1.3rem 1.2rem; }
+  .public-module__head { gap: 0.9rem; }
+  .public-module__num { width: 38px; height: 38px; font-size: 1.1rem; }
+  .public-module__title { font-size: 1.3rem; }
+  .public-topics__list li { font-size: 0.95rem; }
+
+  /* ----- Schedule rows ----- */
+  .schedule-row {
+    grid-template-columns: 38px 1fr;
+    gap: 0.7rem;
+    padding: 0.8rem 1rem;
+  }
+  .schedule-row > div:last-child {
+    grid-column: 1 / -1;
+  }
+
+  /* ----- Drag rows (setup) ----- */
+  .drag-row {
+    grid-template-columns: 28px 38px 1fr;
+    gap: 0.6rem;
+    padding: 0.8rem 0.9rem;
+  }
+  .drag-handle { font-size: 1.2rem; }
+  .drag-num { width: 32px; height: 32px; font-size: 1rem; }
+  .drag-photo { display: none; }
+  .module-panel { padding: 1rem 1rem; }
+  .module-panel__head { flex-direction: column; align-items: flex-start; gap: 0.4rem; }
+
+  /* ----- Run rows (admin live view) ----- */
+  .run-row {
+    grid-template-columns: 40px 48px 1fr;
+    gap: 0.7rem;
+    padding: 0.9rem 1rem;
+    row-gap: 0.5rem;
+  }
+  .run-row__num { width: 38px; height: 38px; font-size: 1rem; }
+  .run-row__photo { width: 44px; height: 44px; }
+  .run-row__status {
+    grid-column: 1 / -1;
+    margin-top: 0.2rem;
+  }
+  .run-row__actions {
+    grid-column: 1 / -1;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 0.4rem;
+  }
+  .run-row__actions form { display: inline-block; margin: 0; }
+  .run-row__actions .btn { padding: 0.5rem 1rem; font-size: 0.85rem; }
+
+  /* ----- Stage card / scoring panel ----- */
+  .stage-card { padding: 1.6rem 1.2rem; }
+  .stage-card__photo {
+    width: 100px;
+    height: 100px;
+    margin-bottom: 1.2rem;
+  }
+  .stage-card__name { font-size: 1.7rem; }
+  .stage-card__topic p { font-size: 1.15rem; }
+  .stage-card--with-score { padding: 1.6rem 1.2rem; }
+
+  /* ----- Speech timer ----- */
+  .speech-timer { padding: 1.2rem 0.9rem; margin: 1.4rem 0; }
+  .speech-timer__display { font-size: 3rem; }
+  .speech-timer__controls {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .speech-timer__controls .btn { width: 100%; }
+
+  /* ----- Scoring section ----- */
+  .scoring-section { padding-top: 1.4rem; margin-top: 1.4rem; }
+  .scoring-window { flex-direction: column; gap: 0.4rem; align-items: flex-start; }
+
+  /* ----- Call overlay (participant) ----- */
+  .call-overlay { padding: 0.6rem; }
+  .call-card { padding: 1.6rem 1.2rem; }
+  .countdown-big { font-size: 3.4rem; margin: 1rem 0; }
+  .topic-option {
+    padding: 1rem 1.1rem;
+    font-size: 1.05rem;
+  }
+
+  /* ----- Result rows ----- */
+  .result-row {
+    grid-template-columns: 60px 1fr;
+    gap: 0.7rem;
+    padding: 1rem 1rem;
+    row-gap: 0.6rem;
+  }
+  .result-row__photo {
+    grid-column: 1;
+    grid-row: 1;
+    width: 50px;
+    height: 50px;
+  }
+  .result-row__position {
+    grid-column: 1;
+    grid-row: 2;
+    text-align: left;
+  }
+  .result-row__body {
+    grid-column: 2;
+    grid-row: 1 / 3;
+  }
+  .result-row__totals {
+    grid-column: 1 / -1;
+    text-align: left;
+    border-top: 1px solid var(--panel-border);
+    padding-top: 0.6rem;
+  }
+  .result-row__totals .result-total {
+    text-align: left;
+    display: flex;
+    align-items: baseline;
+    gap: 0.8rem;
+  }
+  .result-row__name { font-size: 1.05rem; }
+  .position-pill { font-size: 0.9rem; padding: 0.3rem 0.7rem; }
+
+  /* ----- My result card ----- */
+  .my-position-pill {
+    font-size: 1.8rem;
+    padding: 0.6rem 1.4rem;
+  }
+
+  /* ----- Announcement cards ----- */
+  .announcement-card { padding: 1rem 1.2rem; }
+  .announcement-card__title { font-size: 1.1rem; }
+  .announcement-card__body { font-size: 0.98rem; }
+  .announcement-card__head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+  }
+
+  /* ----- Auth pages ----- */
+  .auth-page { padding: 1.4rem 0.8rem; }
+  .auth-logo img { height: 70px; }
+
+  /* ----- Ornaments ----- */
+  .ornament-rule { margin: 1.2rem 0; }
+  .ornament-rule::before,
+  .ornament-rule::after { width: 50px; }
+
+  /* ----- Empty state ----- */
+  .empty-state { padding: 2rem 1rem; }
+  .empty-state .ornament { font-size: 2rem; }
+
+  /* ----- Back link ----- */
+  .back-link { margin-bottom: 1rem; font-size: 0.95rem; }
+
+  /* ----- Footer ----- */
+  .footer { padding: 1.8rem 1rem 1.4rem; margin-top: 2.4rem; font-size: 0.88rem; }
+  .footer-logo { height: 30px; }
+}
+
+/* ===== Very small phones ≤ 480 px ===== */
+@media (max-width: 480px) {
+  html { font-size: 14.5px; }
+  h1 { font-size: 2rem; }
+  h2 { font-size: 1.65rem; }
+
+  .navbar .brand .brand-logo { height: 26px; }
+  .navbar .brand span:first-of-type { font-size: 1.05rem; }
+  .navbar nav a { font-size: 0.65rem; letter-spacing: 0.08em; }
+  .navbar nav { gap: 0.7rem; }
+
+  .public-hero h1 { font-size: 2.1rem; }
+  .public-hero__logo img { height: 60px; }
+  .public-hero__tagline { font-size: 1rem; }
+
+  .dashboard-greeting h1 { font-size: 1.85rem; }
+  .comp-hero h1 { font-size: 1.85rem; }
+
+  .card { padding: 1.5rem 1.1rem; }
+  .card-title { font-size: 1.55rem; }
+  .card-subtitle { font-size: 0.92rem; }
+
+  .stat__value { font-size: 1.7rem; }
+  .stats-grid { gap: 0.6rem; }
+
+  .countdown-big { font-size: 2.7rem; }
+  .speech-timer__display { font-size: 2.6rem; }
+  .my-position-pill { font-size: 1.5rem; padding: 0.5rem 1.2rem; }
+
+  .stage-card__photo { width: 86px; height: 86px; }
+  .stage-card__name { font-size: 1.5rem; }
+}
+
+/* ===== Touch-target safety ===== */
+@media (max-width: 760px) {
+  button,
+  .btn,
+  input[type="checkbox"],
+  input[type="radio"],
+  .checkbox-row,
+  .radio-row,
+  .topic-option {
+    min-height: 44px;
+  }
 }
