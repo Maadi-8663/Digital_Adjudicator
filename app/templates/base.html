@@ -24,14 +24,14 @@
           {% elif current_user.is_judge %}
             <a href="{{ url_for('judge.dashboard') }}">Dashboard</a>
           {% elif current_user.is_participant %}
-            <a href="{{ url_for('public.home') }}">Competitions</a>
+            <a href="{{ url_for('public.home') }}">Browse</a>
             <a href="{{ url_for('participant.dashboard') }}">Dashboard</a>
           {% endif %}
           <span class="user-name">{{ current_user.full_name or current_user.username }}</span>
-          <a href="{{ url_for('auth.logout') }}">Sign out</a>
+          <a href="{{ url_for('auth.logout') }}">Logout</a>
         {% else %}
-          <a href="{{ url_for('public.home') }}">Competitions</a>
-          <a href="{{ url_for('auth.login') }}">Sign in</a>
+          <a href="{{ url_for('public.home') }}">Browse</a>
+          <a href="{{ url_for('auth.login') }}">Login</a>
           <a href="{{ url_for('auth.register') }}">Register</a>
         {% endif %}
       </nav>

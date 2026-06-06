@@ -1491,6 +1491,14 @@ main { flex: 1; }
   h4 { font-size: 1.2rem; }
   p  { font-size: 1.05rem; }
 
+  /* ----- Body background (iOS Safari ignores background-attachment: fixed,
+     which made the desktop background look 'changed' on phones) ----- */
+  body {
+    background-attachment: scroll;
+    background-size: cover;
+    background-position: center top;
+  }
+
   /* ----- Navbar ----- */
   .navbar {
     padding: 0.8rem 1rem;
@@ -1506,17 +1514,36 @@ main { flex: 1; }
   }
   .navbar .brand .brand-sub { display: none; }
   .navbar nav {
-    gap: 1rem;
+    gap: 0.5rem;
     flex-wrap: wrap;
     justify-content: flex-end;
     width: 100%;
     margin-top: 0.3rem;
   }
+  /* Pill-button styling — keeps "Sign in" on one line and looks like a button */
   .navbar nav a {
-    font-size: 0.7rem;
+    font-size: 0.72rem;
     margin-left: 0;
     letter-spacing: 0.1em;
+    white-space: nowrap;
+    background: rgba(190, 154, 85, 0.08);
+    border: 1px solid rgba(190, 154, 85, 0.32);
+    border-radius: 999px;
+    padding: 0.5rem 0.95rem;
+    line-height: 1;
+    color: var(--text-primary);
+    display: inline-flex;
+    align-items: center;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
   }
+  .navbar nav a:hover,
+  .navbar nav a:focus-visible {
+    background: rgba(190, 154, 85, 0.18);
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+  /* Kill the underline-on-hover indicator that desktop uses */
+  .navbar nav a::after { display: none; }
   .navbar nav .user-name { display: none; }
 
   /* ----- Containers ----- */
@@ -1808,8 +1835,12 @@ main { flex: 1; }
 
   .navbar .brand .brand-logo { height: 26px; }
   .navbar .brand span:first-of-type { font-size: 1.05rem; }
-  .navbar nav a { font-size: 0.65rem; letter-spacing: 0.08em; }
-  .navbar nav { gap: 0.7rem; }
+  .navbar nav a {
+    font-size: 0.66rem;
+    letter-spacing: 0.08em;
+    padding: 0.45rem 0.8rem;
+  }
+  .navbar nav { gap: 0.4rem; }
 
   .public-hero h1 { font-size: 2.1rem; }
   .public-hero__logo img { height: 60px; }
