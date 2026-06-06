@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+{% block title %}{{ t.name }} · Admin{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="back-link">
+    <a href="{{ url_for('admin.dashboard') }}">← All competitions</a>
+  </div>
+
+  <section class="comp-hero">
+    <div class="eyebrow">Competition</div>
+    <h1>{{ t.name }}</h1>
+    <div class="comp-hero__meta">
+      <span class="chip chip--{{ t.status }}">{{ t.status_label }}</span>
+      {% if t.start_date and t.end_date %}
+        <span class="dim italic">{{ t.start_date.strftime('%d %b %Y') }} — {{ t.end_date.strftime('%d %b %Y') }}</span>
+      {% endif %}
+      {% if t.venue %}
+        <span class="dim italic">·</span>
+        <span class="dim italic">{{ t.venue }}</span>
+      {% endif %}
+    </div>
+    {% if t.description %}
+      <p class="muted italic" style="max-width: 720px; margin: 1rem auto 0; text-align: center;">{{ t.description }}</p>
+    {% endif %}
+  </section>
+
+  <div class="divider-thin"></div>
+
+  <!-- Status flow -->
+  <section class="card card--soft">
+    <h3 style="text-align: center; margin-bottom: 1rem;">Competition Status</h3>
+    <div class="divider-thin"></div>
+    <p class="muted italic" style="text-align: center; margin-bottom: 1.2rem;">
+      {% if t.status == "setup" %}
+        Currently in setup. Once you have at least one module, open it for registration.
+      {% elif t.status == "open_for_registration" %}
+        Registration is open. Participants can apply on the public homepage.
+      {% elif t.status == "registration_closed" %}
+        Registration is closed. The competition is ready to start.
+      {% elif t.status == "in_progress" %}
+        The competition is underway.
+      {% elif t.status == "completed" %}
+        The competition has concluded.
+      {% endif %}
+    </p>
+
+    {% if t.status == "setup" and t.modules and not t.all_modules_complete %}
+      <div class="flash flash-error" style="text-align: left; margin-bottom: 1rem;">
+        Cannot open registration yet. These modules are incomplete:
+        <strong>
+          {% for m in t.incomplete_modules %}{{ m.name }}{% if not loop.last %}, {% endif %}{% endfor %}
+        </strong>.
+        Every module needs at least one topic and at least one judge.
+      </div>
+    {% endif %}
+
+    <div class="btn-row" style="justify-content: center;">
+      {% if t.status == "setup" %}
+        <form method="POST" action="{{ url_for('admin.change_status', competition_id=t.id, new_status='open_for_registration') }}" style="flex: 0 0 auto;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+          <button type="submit" class="btn btn-primary btn-compact"
+                  {% if not t.all_modules_complete %}disabled style="opacity: 0.5; cursor: not-allowed;"{% endif %}>
+            Open Registration
+          </button>
+        </form>
+      {% elif t.status == "open_for_registration" %}
+        <form method="POST" action="{{ url_for('admin.change_status', competition_id=t.id, new_status='registration_closed') }}" style="flex: 0 0 auto;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+          <button type="submit" class="btn btn-ghost btn-compact">Close Registration</button>
+        </form>
+      {% elif t.status == "registration_closed" %}
+        <a href="{{ url_for('admin.setup', competition_id=t.id) }}" class="btn btn-primary btn-compact">Arrange Order &amp; Start</a>
+      {% elif t.status == "in_progress" %}
+        <a href="{{ url_for('admin.setup', competition_id=t.id) }}" class="btn btn-ghost btn-compact">View Schedule</a>
+        <form method="POST" action="{{ url_for('admin.change_status', competition_id=t.id, new_status='completed') }}" style="flex: 0 0 auto;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+          <button type="submit" class="btn btn-ghost btn-compact">Conclude Competition</button>
+        </form>
+      {% endif %}
+    </div>
+  </section>
+
+  {% if t.status == "in_progress" %}
+    <section class="section-bar" style="margin-top: 1rem;">
+      <h2 class="section-title">Run Modules</h2>
+    </section>
+    <p class="muted italic" style="margin-bottom: 1rem;">
+      Start each module in the order shown. Only one module can be running at a time.
+    </p>
+    <div class="round-list" style="margin-bottom: 2.4rem;">
+      {% for m in t.modules %}
+        <div class="round-row">
+          <div class="round-row__num">{{ m.precedence }}</div>
+          <div class="round-row__body">
+            <div class="round-row__title">
+              <strong>{{ m.name }}</strong>
+              <span class="chip chip--{{ m.status }} chip--small">{{ m.status_label }}</span>
+            </div>
+            <p class="muted italic">{{ m.judges | length }} judge{{ '' if m.judges|length == 1 else 's' }} &nbsp;·&nbsp; {{ m.topics | length }} topic{{ '' if m.topics|length == 1 else 's' }}</p>
+          </div>
+          <div class="round-row__meta">
+            {% if m.status == "pending" %}
+              <form method="POST" action="{{ url_for('admin.start_module', competition_id=t.id, module_id=m.id) }}" style="display: inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="submit" class="btn btn-primary btn-compact">Start {{ m.name }}</button>
+              </form>
+            {% elif m.status == "current" %}
+              <a href="{{ url_for('admin.run_module', competition_id=t.id, module_id=m.id) }}" class="btn btn-primary btn-compact">Open Live View</a>
+            {% else %}
+              <a href="{{ url_for('admin.run_module', competition_id=t.id, module_id=m.id) }}" class="link-soft">View →</a>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <!-- Modules -->
+  <section class="section-bar">
+    <h2 class="section-title">Modules &amp; Topics</h2>
+    <a href="{{ url_for('admin.add_module', competition_id=t.id) }}" class="btn btn-primary btn-compact">Add Module</a>
+  </section>
+
+  {% if t.modules %}
+    <div class="round-list">
+      {% for m in t.modules %}
+        <a href="{{ url_for('admin.module_detail', competition_id=t.id, module_id=m.id) }}" class="round-row module-row">
+          <div class="round-row__num">{{ m.precedence }}</div>
+          <div class="round-row__body">
+            <div class="round-row__title">
+              <strong>{{ m.name }}</strong>
+              <span class="chip chip--{{ m.status }} chip--small">{{ m.status_label }}</span>
+            </div>
+            <p class="muted italic">
+              {{ m.topics | length }} topic{{ '' if m.topics|length == 1 else 's' }} &nbsp;·&nbsp;
+              {{ m.judges | length }} judge{{ '' if m.judges|length == 1 else 's' }}
+              {% if m.is_complete %}
+                &nbsp;·&nbsp; <span style="color: var(--success);">✓ Ready</span>
+              {% else %}
+                &nbsp;·&nbsp; <span style="color: var(--error);">Needs {{ m.missing_pieces | join(' and ') }}</span>
+              {% endif %}
+            </p>
+          </div>
+          <div class="round-row__meta"><span class="muted italic">Manage →</span></div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <div class="ornament">❧</div>
+      <p>No modules yet.</p>
+      <p class="muted italic">Add modules like "English Debate", "Urdu Humorous", or "Bait Bazi" to begin.</p>
+    </div>
+  {% endif %}
+
+  <!-- Participant form designer -->
+  <section class="section-bar">
+    <h2 class="section-title">Participant Application Form</h2>
+    <a href="{{ url_for('admin.add_field', competition_id=t.id) }}" class="btn btn-primary btn-compact">Add Custom Field</a>
+  </section>
+
+  <div class="card card--soft">
+    <p class="muted italic" style="margin-bottom: 1rem;">Default fields that every participant fills in:</p>
+    <div class="field-list">
+      <div class="field-row field-row--default">
+        <div class="field-row__type">Short text</div>
+        <div class="field-row__label">Full Name <span class="required-mark">*</span></div>
+        <div class="field-row__meta">Always required</div>
+      </div>
+      <div class="field-row field-row--default">
+        <div class="field-row__type">Short text</div>
+        <div class="field-row__label">Institution <span class="required-mark">*</span></div>
+        <div class="field-row__meta">Always required</div>
+      </div>
+      <div class="field-row field-row--default">
+        <div class="field-row__type">Image upload</div>
+        <div class="field-row__label">Profile Photo <span class="required-mark">*</span></div>
+        <div class="field-row__meta">Always required</div>
+      </div>
+      <div class="field-row field-row--default">
+        <div class="field-row__type">Multiple choice</div>
+        <div class="field-row__label">Modules to participate in <span class="required-mark">*</span></div>
+        <div class="field-row__meta">From the modules above</div>
+      </div>
+    </div>
+
+    {% if t.form_fields %}
+      <div class="divider-thin"></div>
+      <p class="muted italic" style="margin-bottom: 1rem;">Your custom fields:</p>
+      <div class="field-list">
+        {% for f in t.form_fields %}
+          <div class="field-row">
+            <div class="field-row__type">{{ f.type_label }}</div>
+            <div class="field-row__label">
+              {{ f.label }}
+              {% if f.required %}<span class="required-mark">*</span>{% endif %}
+              {% if f.help_text %}<div class="field-row__hint">{{ f.help_text }}</div>{% endif %}
+              {% if f.takes_options and f.options %}
+                <div class="field-row__hint">Options: {{ f.options | join(', ') }}</div>
+              {% endif %}
+            </div>
+            <div class="field-row__meta">
+              <a href="{{ url_for('admin.edit_field', competition_id=t.id, field_id=f.id) }}" class="link-soft">Edit</a>
+              <form method="POST" action="{{ url_for('admin.delete_field', competition_id=t.id, field_id=f.id) }}" style="display: inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="submit" class="link-soft link-delete" onclick="return confirm('Remove this field?');">Delete</button>
+              </form>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="divider-thin"></div>
+      <p class="muted italic" style="text-align: center;">
+        No custom fields yet. The default fields above are enough for a simple competition.
+      </p>
+    {% endif %}
+  </div>
+
+  <!-- Announcements -->
+  <section class="section-bar" style="margin-top: 3rem;">
+    <h2 class="section-title">Announcements</h2>
+    <a href="{{ url_for('admin.create_announcement', competition_id=t.id) }}" class="btn btn-primary btn-compact">Post Announcement</a>
+  </section>
+
+  {% if t.announcements %}
+    <div class="announcement-list">
+      {% for a in t.announcements %}
+        <div class="announcement-card">
+          <div class="announcement-card__head">
+            <div class="eyebrow">
+              {{ a.created_at.strftime('%d %b · %H:%M') }}
+              {% if a.module %} · {{ a.module.name }}{% else %} · All Modules{% endif %}
+            </div>
+            <form method="POST" action="{{ url_for('admin.delete_announcement', competition_id=t.id, announcement_id=a.id) }}" style="display: inline;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+              <button type="submit" class="link-soft link-delete" onclick="return confirm('Remove this announcement?');">Remove</button>
+            </form>
+          </div>
+          <h4 class="announcement-card__title">{{ a.title }}</h4>
+          {% if a.body %}<p class="announcement-card__body">{{ a.body }}</p>{% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="card card--soft">
+      <p class="muted italic" style="text-align: center;">No announcements yet. Post one when there's something to share.</p>
+    </div>
+  {% endif %}
+
+  <!-- Overall standings -->
+  {% if t.status in ('in_progress', 'completed') %}
+    <div style="text-align: center; margin-top: 3rem;">
+      <a href="{{ url_for('admin.overall_results', competition_id=t.id) }}" class="btn btn-ghost">View Overall Standings</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

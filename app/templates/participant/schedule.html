@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+{% block title %}Schedule · {{ c.name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="back-link">
+    <a href="{{ url_for('participant.dashboard') }}">← Back to dashboard</a>
+  </div>
+
+  <section class="comp-hero">
+    <div class="eyebrow">{{ c.status_label }}</div>
+    <h1>{{ c.name }}</h1>
+    {% if c.status == "in_progress" %}
+      <p class="muted italic" style="margin-top: 0.8rem;">
+        The competition is underway. Watch this page — when you are called, a topic picker will appear automatically.
+      </p>
+    {% elif c.status == "completed" %}
+      <p class="muted italic" style="margin-top: 0.8rem;">
+        This competition has concluded.
+      </p>
+    {% endif %}
+  </section>
+
+  <!-- Live call banner (gets populated by JS) -->
+  <div id="live-banner"></div>
+
+  {% if c.status == "completed" %}
+    <div style="text-align: center; margin-top: 1rem;">
+      <a href="{{ url_for('participant.overall_results', competition_id=c.id) }}" class="btn btn-primary">View Overall Standings</a>
+    </div>
+  {% endif %}
+
+  {% if announcements %}
+    <section class="section-bar" style="margin-top: 2rem;">
+      <h2 class="section-title">Announcements</h2>
+    </section>
+    <div class="announcement-list">
+      {% for a in announcements %}
+        <div class="announcement-card">
+          <div class="announcement-card__head">
+            <div class="eyebrow">
+              {{ a.created_at.strftime('%d %b · %H:%M') }}{% if a.module %} · {{ a.module.name }}{% endif %}
+            </div>
+          </div>
+          <h4 class="announcement-card__title">{{ a.title }}</h4>
+          {% if a.body %}<p class="announcement-card__body">{{ a.body }}</p>{% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="divider-thin"></div>
+
+  <!-- Module precedence -->
+  <section class="section-bar">
+    <h2 class="section-title">Module Order</h2>
+  </section>
+
+  <div class="round-list" style="margin-bottom: 2.4rem;">
+    {% for row in schedule %}
+      {% set m = row.module %}
+      <div class="round-row">
+        <div class="round-row__num">{{ m.precedence }}</div>
+        <div class="round-row__body">
+          <div class="round-row__title">
+            <strong>{{ m.name }}</strong>
+            {% if row.apps is not none %}
+              <span class="chip chip--applied chip--small">You're in this module</span>
+            {% endif %}
+          </div>
+          {% if m.description %}
+            <p class="muted italic">{{ m.description[:120] }}{% if m.description|length > 120 %}…{% endif %}</p>
+          {% endif %}
+        </div>
+        <div class="round-row__meta">
+          {% if m.status == "completed" and row.apps is not none %}
+            <a href="{{ url_for('participant.module_result', competition_id=c.id, module_id=m.id) }}" class="btn btn-primary btn-compact">View Result</a>
+          {% else %}
+            <span class="chip chip--{{ m.status }} chip--small">{{ m.status_label }}</span>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- Per-module participant lists -->
+  {% for row in schedule %}
+    {% if row.apps is not none %}
+      <section class="section-bar" style="margin-top: 2rem;">
+        <h2 class="section-title">{{ row.module.name }} — Turn Order</h2>
+      </section>
+
+      {% for entry in row.apps %}
+        <div class="schedule-row {% if entry.is_self %}is-self{% endif %}">
+          <div class="drag-num">{{ entry.position }}</div>
+          <div>
+            <strong>{{ entry.application.full_name }}{% if entry.is_self %} (you){% endif %}</strong>
+            <p class="muted italic" style="font-size: 0.9rem; margin: 0;">{{ entry.application.institution }}</p>
+          </div>
+          <div>
+            <span class="chip chip--{{ entry.status }} chip--small">
+              {% if entry.status == 'queued'       %}In Queue
+              {% elif entry.status == 'called'      %}Called
+              {% elif entry.status == 'on_stage'    %}On Stage
+              {% elif entry.status == 'completed'   %}Done
+              {% elif entry.status == 'disqualified' %}Disqualified
+              {% elif entry.status == 'skipped'     %}Skipped
+              {% else %}{{ entry.status }}
+              {% endif %}
+            </span>
+          </div>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endfor %}
+</div>
+
+<!-- Topic-picker overlay (hidden by default) -->
+<div id="call-overlay" class="call-overlay" style="display: none;">
+  <div class="call-card">
+    <div class="eyebrow" style="text-align: center;">You Have Been Called</div>
+    <h2 class="card-title" id="call-module-name" style="text-align: center;"></h2>
+    <p class="card-subtitle" id="call-module-sub">Pick a topic within the time limit. Once chosen, you are on stage.</p>
+
+    <div class="countdown-big" id="countdown-display">2:00</div>
+
+    <div class="topic-list" id="topic-options"></div>
+
+    <div id="call-status" class="muted italic" style="text-align: center; margin-top: 1rem;"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const competitionId = {{ c.id }};
+  const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+
+  // Only check modules the participant is in
+  const myModuleIds = [
+    {% for row in schedule %}{% if row.apps is not none %}{{ row.module.id }}{% if not loop.last %}, {% endif %}{% endif %}{% endfor %}
+  ];
+
+  const overlay = document.getElementById('call-overlay');
+  const countdownEl = document.getElementById('countdown-display');
+  const topicOptionsEl = document.getElementById('topic-options');
+  const callModuleNameEl = document.getElementById('call-module-name');
+  const callStatusEl = document.getElementById('call-status');
+
+  let activeModuleId = null;
+  let activeStatus = null;
+
+  function formatSeconds(s) {
+    if (s < 0) s = 0;
+    const m = Math.floor(s / 60), r = s % 60;
+    return `${m}:${r.toString().padStart(2, '0')}`;
+  }
+
+  function renderTopicPicker(moduleId, moduleName, topics, secondsLeft) {
+    activeModuleId = moduleId;
+    callModuleNameEl.textContent = moduleName;
+    countdownEl.textContent = formatSeconds(secondsLeft);
+    countdownEl.classList.toggle('countdown-warn', secondsLeft <= 30);
+    countdownEl.classList.toggle('countdown-expired', secondsLeft <= 0);
+
+    topicOptionsEl.innerHTML = topics.map(t =>
+      `<button type="button" class="topic-option" data-topic-id="${t.id}">${t.title}</button>`
+    ).join('');
+
+    overlay.style.display = 'flex';
+  }
+
+  function renderOnStage(moduleName) {
+    overlay.style.display = 'flex';
+    callModuleNameEl.textContent = moduleName;
+    countdownEl.textContent = '';
+    topicOptionsEl.innerHTML = '';
+    callStatusEl.innerHTML = '<strong style="color: var(--gold);">You are on stage. Speak well.</strong>';
+  }
+
+  function hideOverlay() {
+    overlay.style.display = 'none';
+    activeModuleId = null;
+    activeStatus = null;
+    callStatusEl.innerHTML = '';
+  }
+
+  topicOptionsEl.addEventListener('click', e => {
+    const btn = e.target.closest('.topic-option');
+    if (!btn || !activeModuleId) return;
+    const topicId = btn.dataset.topicId;
+    btn.disabled = true;
+    callStatusEl.textContent = 'Submitting your choice…';
+
+    fetch(`/participant/competition/${competitionId}/module/${activeModuleId}/topic`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+      body: JSON.stringify({ topic_id: parseInt(topicId, 10) })
+    })
+    .then(r => r.json())
+    .then(d => {
+      if (d.ok) {
+        // Status will flip to on_stage on next poll
+        callStatusEl.innerHTML = '<strong style="color: var(--gold);">Topic chosen. You are on stage.</strong>';
+      } else {
+        callStatusEl.textContent = d.error || 'Could not submit your choice.';
+        btn.disabled = false;
+      }
+    })
+    .catch(() => { callStatusEl.textContent = 'Network issue — try again.'; btn.disabled = false; });
+  });
+
+  function poll() {
+    Promise.all(myModuleIds.map(mid =>
+      fetch(`/participant/competition/${competitionId}/module/${mid}/state.json`)
+        .then(r => r.json())
+        .catch(() => null)
+    )).then(results => {
+      // Find a module where I'm called or on_stage
+      const calledRes = results.find(r => r && r.ok && r.status === 'called');
+      const stageRes  = results.find(r => r && r.ok && r.status === 'on_stage');
+
+      if (calledRes) {
+        const moduleId = myModuleIds[results.indexOf(calledRes)];
+        // Get module name from page DOM
+        const moduleNameEl = document.querySelector(`[data-module-id="${moduleId}"]`);
+        const moduleName = (moduleNameEl && moduleNameEl.textContent) || 'Your Module';
+        const secs = calledRes.seconds_left !== null ? calledRes.seconds_left : 0;
+        renderTopicPicker(moduleId, moduleName, calledRes.topics || [], secs);
+      } else if (stageRes) {
+        const moduleId = myModuleIds[results.indexOf(stageRes)];
+        const moduleNameEl = document.querySelector(`[data-module-id="${moduleId}"]`);
+        const moduleName = (moduleNameEl && moduleNameEl.textContent) || 'Your Module';
+        if (activeStatus !== 'on_stage') {
+          renderOnStage(moduleName);
+          activeStatus = 'on_stage';
+        }
+      } else {
+        if (overlay.style.display === 'flex' && activeStatus !== 'on_stage') {
+          hideOverlay();
+        }
+        if (activeStatus === 'on_stage') {
+          // Was on stage, now no longer — completed or moved on, refresh schedule view
+          window.location.reload();
+        }
+      }
+    });
+  }
+
+  poll();
+  setInterval(poll, 2500);
+})();
+</script>
+{% endblock %}

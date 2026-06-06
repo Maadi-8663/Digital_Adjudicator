@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}Apply · {{ t.name }}{% endblock %}
+
+{% block content %}
+<div class="container container--narrow">
+  <div class="back-link">
+    <a href="{{ url_for('public.competition_detail', competition_id=t.id) }}">← Back to {{ t.name }}</a>
+  </div>
+
+  <div class="card">
+    <div class="eyebrow" style="text-align: center;">Application Form</div>
+    <h2 class="card-title">{{ t.name }}</h2>
+    <p class="card-subtitle">Tell us a little about yourself.</p>
+
+    <div class="ornament-rule">❦</div>
+
+    {% if errors %}
+      <div class="flash-stack">
+        {% for e in errors %}
+          <div class="flash flash-error">{{ e }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <form method="POST" enctype="multipart/form-data" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+      <!-- Default fields -->
+      <div class="form-group">
+        <label for="full_name">Full Name <span class="required-mark">*</span></label>
+        <input type="text" name="full_name" id="full_name"
+               value="{{ values.full_name if values.full_name else current_user.full_name or '' }}"
+               placeholder="Your full name as it should appear on the stage"
+               required />
+      </div>
+
+      <div class="form-group">
+        <label for="institution">Institution <span class="required-mark">*</span></label>
+        <input type="text" name="institution" id="institution"
+               value="{{ values.institution if values.institution else current_user.institution or '' }}"
+               placeholder="e.g. UET Lahore - New Campus"
+               required />
+      </div>
+
+      <div class="form-group">
+        <label for="photo">Profile Photo <span class="required-mark">*</span></label>
+        <input type="file" name="photo" id="photo" accept="image/*" required />
+        <p class="muted italic" style="font-size: 0.85rem; margin-top: 0.4rem;">
+          JPG, PNG, GIF, or WEBP. Used on the stage call screen.
+        </p>
+      </div>
+
+      <div class="form-group">
+        <label>Modules to Participate In <span class="required-mark">*</span></label>
+        <p class="muted italic" style="font-size: 0.88rem; margin-bottom: 0.7rem;">
+          Pick one or more. You will be scheduled in each one you choose.
+        </p>
+        <div class="checkbox-group">
+          {% for m in t.modules %}
+            <label class="checkbox-row">
+              <input type="checkbox" name="modules" value="{{ m.id }}"
+                     {% if values.modules and m.id|string in values.modules %}checked{% endif %} />
+              <div>
+                <strong>{{ m.name }}</strong>
+                {% if m.description %}
+                  <span class="muted italic">— {{ m.description[:100] }}{% if m.description|length > 100 %}…{% endif %}</span>
+                {% endif %}
+              </div>
+            </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Custom fields -->
+      {% if t.form_fields %}
+        <div class="divider-thin"></div>
+        {% for f in t.form_fields %}
+          <div class="form-group">
+            <label for="field_{{ f.id }}">
+              {{ f.label }}
+              {% if f.required %}<span class="required-mark">*</span>{% endif %}
+            </label>
+
+            {% if f.field_type == "text" %}
+              <input type="text" name="field_{{ f.id }}" id="field_{{ f.id }}"
+                     value="{{ values.custom[f.id] if values.custom and f.id in values.custom else '' }}"
+                     {% if f.required %}required{% endif %} />
+            {% elif f.field_type == "textarea" %}
+              <textarea name="field_{{ f.id }}" id="field_{{ f.id }}" rows="4"
+                        {% if f.required %}required{% endif %}>{{ values.custom[f.id] if values.custom and f.id in values.custom else '' }}</textarea>
+            {% elif f.field_type == "number" %}
+              <input type="number" name="field_{{ f.id }}" id="field_{{ f.id }}"
+                     value="{{ values.custom[f.id] if values.custom and f.id in values.custom else '' }}"
+                     {% if f.required %}required{% endif %} />
+            {% elif f.field_type == "single_select" %}
+              <div class="radio-group">
+                {% for opt in f.options %}
+                  <label class="radio-row">
+                    <input type="radio" name="field_{{ f.id }}" value="{{ opt }}"
+                           {% if values.custom and values.custom.get(f.id) == opt %}checked{% endif %}
+                           {% if f.required %}required{% endif %} />
+                    <span>{{ opt }}</span>
+                  </label>
+                {% endfor %}
+              </div>
+            {% elif f.field_type == "multi_select" %}
+              <div class="checkbox-group">
+                {% for opt in f.options %}
+                  <label class="checkbox-row">
+                    <input type="checkbox" name="field_{{ f.id }}" value="{{ opt }}"
+                           {% if values.custom and values.custom.get(f.id) and opt in values.custom.get(f.id) %}checked{% endif %} />
+                    <span>{{ opt }}</span>
+                  </label>
+                {% endfor %}
+              </div>
+            {% elif f.field_type == "image" %}
+              <input type="file" name="field_{{ f.id }}" id="field_{{ f.id }}" accept="image/*"
+                     {% if f.required %}required{% endif %} />
+            {% endif %}
+
+            {% if f.help_text %}
+              <p class="muted italic" style="font-size: 0.85rem; margin-top: 0.4rem;">{{ f.help_text }}</p>
+            {% endif %}
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      <div class="btn-row" style="margin-top: 2rem;">
+        <a href="{{ url_for('public.competition_detail', competition_id=t.id) }}" class="btn btn-ghost">Cancel</a>
+        <button type="submit" class="btn btn-primary">Submit Application</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

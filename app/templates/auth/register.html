@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Create Account · Digital Adjudicator{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+  <div class="card">
+    <div class="auth-logo">
+      <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="" />
+    </div>
+    <div class="eyebrow" style="text-align: center;">Step Into the Hall</div>
+    <h2 class="card-title">Register as a Participant</h2>
+    <p class="card-subtitle">Set up your account and apply to open competitions.</p>
+
+    <div class="ornament-rule">❧</div>
+
+    <form method="POST" action="{{ url_for('auth.register') }}" novalidate>
+      {{ form.hidden_tag() }}
+      <!-- role is fixed to 'participant' -->
+      {{ form.role(style="display: none;") }}
+
+      <div class="form-group">
+        {{ form.full_name.label }}
+        {{ form.full_name() }}
+        {% if form.full_name.errors %}<div class="error">{{ form.full_name.errors[0] }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        {{ form.email.label }}
+        {{ form.email() }}
+        {% if form.email.errors %}<div class="error">{{ form.email.errors[0] }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        {{ form.institution.label }}
+        {{ form.institution() }}
+        {% if form.institution.errors %}<div class="error">{{ form.institution.errors[0] }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        {{ form.team_name.label }}
+        {{ form.team_name() }}
+        {% if form.team_name.errors %}<div class="error">{{ form.team_name.errors[0] }}</div>{% endif %}
+      </div>
+
+      <div class="form-group">
+        {{ form.username.label }}
+        {{ form.username() }}
+        {% if form.username.errors %}<div class="error">{{ form.username.errors[0] }}</div>{% endif %}
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          {{ form.password.label }}
+          {{ form.password() }}
+          {% if form.password.errors %}<div class="error">{{ form.password.errors[0] }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+          {{ form.confirm.label }}
+          {{ form.confirm() }}
+          {% if form.confirm.errors %}<div class="error">{{ form.confirm.errors[0] }}</div>{% endif %}
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn--block">Create Account</button>
+    </form>
+
+    <p class="auth-link">
+      Already a member? <a href="{{ url_for('auth.login') }}">Sign in</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}{{ t.name }} · Digital Adjudicator{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="back-link">
+    <a href="{{ url_for('public.home') }}">← All competitions</a>
+  </div>
+
+  <section class="comp-hero">
+    <div class="eyebrow">{{ t.status_label }}</div>
+    <h1>{{ t.name }}</h1>
+    <div class="comp-hero__meta">
+      {% if t.start_date and t.end_date %}
+        <span class="dim italic">{{ t.start_date.strftime('%d %b %Y') }} — {{ t.end_date.strftime('%d %b %Y') }}</span>
+      {% endif %}
+      {% if t.venue %}
+        <span class="dim italic">·</span>
+        <span class="dim italic">{{ t.venue }}</span>
+      {% endif %}
+    </div>
+    {% if t.description %}
+      <p class="muted italic" style="max-width: 760px; margin: 1rem auto 0; text-align: center; font-size: 1.15rem;">
+        {{ t.description }}
+      </p>
+    {% endif %}
+
+    <!-- Apply / status CTA -->
+    <div style="margin-top: 2.4rem; text-align: center;">
+      {% if t.accepts_applications %}
+        {% if already_applied %}
+          <div class="cta-block">
+            <span class="chip chip--applied">Already Applied</span>
+            <p class="muted italic" style="margin-top: 0.8rem;">
+              Your application is in. You can follow it on
+              <a href="{{ url_for('participant.dashboard') }}">your dashboard</a>.
+            </p>
+          </div>
+        {% else %}
+          <a href="{{ url_for('public.apply', competition_id=t.id) }}" class="btn btn-primary">
+            Apply to This Competition
+          </a>
+          {% if not current_user.is_authenticated %}
+            <p class="muted italic" style="margin-top: 0.8rem; font-size: 0.95rem;">
+              You will be asked to sign in before applying.
+            </p>
+          {% elif current_user.is_authenticated and not current_user.is_participant %}
+            <p class="muted italic" style="margin-top: 0.8rem; font-size: 0.95rem;">
+              Only participant accounts can apply.
+            </p>
+          {% endif %}
+        {% endif %}
+      {% elif t.status == "registration_closed" %}
+        <p class="muted italic">Registration is closed. The competition is preparing to begin.</p>
+      {% elif t.status == "in_progress" %}
+        <p class="muted italic">The competition is currently underway.</p>
+      {% elif t.status == "completed" %}
+        <p class="muted italic">This competition has concluded.</p>
+      {% endif %}
+    </div>
+  </section>
+
+  <div class="divider-thin"></div>
+
+  <!-- Modules -->
+  <section class="section-bar">
+    <h2 class="section-title">Modules</h2>
+  </section>
+
+  {% if t.modules %}
+    <div class="public-modules">
+      {% for m in t.modules %}
+        <div class="public-module">
+          <div class="public-module__head">
+            <span class="public-module__num">{{ m.precedence }}</span>
+            <div>
+              <h3 class="public-module__title">{{ m.name }}</h3>
+              {% if m.description %}
+                <p class="public-module__desc">{{ m.description }}</p>
+              {% endif %}
+            </div>
+          </div>
+          {% if m.topics %}
+            <div class="public-topics">
+              <div class="eyebrow" style="margin-bottom: 0.7rem;">
+                Topics ({{ m.topics | length }})
+              </div>
+              <ul class="public-topics__list">
+                {% for tp in m.topics %}
+                  <li>"{{ tp.title }}"</li>
+                {% endfor %}
+              </ul>
+              <p class="muted italic" style="font-size: 0.9rem; margin-top: 0.8rem;">
+                Participants choose one of these when called to the stage.
+              </p>
+            </div>
+          {% else %}
+            <p class="muted italic">Topics will be announced before the competition begins.</p>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="muted italic" style="text-align: center; padding: 2rem 0;">
+      Modules will be added before registration opens.
+    </p>
+  {% endif %}
+
+</div>
+{% endblock %}

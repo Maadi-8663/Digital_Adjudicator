@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}Running: {{ m.name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="back-link">
+    <a href="{{ url_for('admin.competition_detail', competition_id=t.id) }}">← Back to {{ t.name }}</a>
+  </div>
+
+  <section class="comp-hero">
+    <div class="eyebrow">{{ m.status_label }}</div>
+    <h1>{{ m.name }}</h1>
+    <p class="muted italic" style="margin-top: 0.6rem;">{{ t.name }}</p>
+  </section>
+
+  <div class="divider-thin"></div>
+
+  {% if m.status == "current" %}
+    <section class="section-bar">
+      <h2 class="section-title">Participants</h2>
+      <div class="btn-row" style="flex: 0 0 auto;">
+        <a href="{{ url_for('admin.module_results', competition_id=t.id, module_id=m.id) }}" class="btn btn-ghost btn-compact">Live Results</a>
+        <form method="POST" action="{{ url_for('admin.conclude_module', competition_id=t.id, module_id=m.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+          <button type="submit" class="btn btn-ghost btn-compact"
+                  onclick="return confirm('Conclude this module? You should only do this after every participant has performed.');">
+            Conclude Module
+          </button>
+        </form>
+      </div>
+    </section>
+  {% else %}
+    <section class="section-bar">
+      <h2 class="section-title">Participants</h2>
+      <div class="btn-row" style="flex: 0 0 auto;">
+        <a href="{{ url_for('admin.module_results', competition_id=t.id, module_id=m.id) }}" class="btn btn-primary btn-compact">View Results</a>
+      </div>
+    </section>
+  {% endif %}
+
+  <div id="participants" class="run-list" data-module-status="{{ m.status }}"></div>
+
+  <template id="row-template">
+    <div class="run-row" data-app-id="">
+      <div class="run-row__num"></div>
+      <img class="run-row__photo" src="" alt=""/>
+      <div class="run-row__body">
+        <div class="run-row__name"></div>
+        <div class="run-row__institution muted italic"></div>
+        <div class="run-row__topic gold italic"></div>
+        <div class="run-row__countdown"></div>
+      </div>
+      <div class="run-row__status"></div>
+      <div class="run-row__actions"></div>
+    </div>
+  </template>
+</div>
+
+<script>
+(function () {
+  const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+  const competitionId = {{ t.id }};
+  const moduleId = {{ m.id }};
+  const moduleIsRunning = ({{ 'true' if m.status == 'current' else 'false' }});
+
+  const container = document.getElementById('participants');
+  const rowTemplate = document.getElementById('row-template');
+
+  function actionForm(action, label, classes) {
+    return `<form method="POST" action="/admin/competition/${competitionId}/module/${moduleId}/participant/__APPID__/${action}" style="display: inline-block; margin: 0 0.3rem;">
+              <input type="hidden" name="csrf_token" value="${csrfToken}"/>
+              <button type="submit" class="${classes}">${label}</button>
+            </form>`;
+  }
+
+  function buildButtons(status) {
+    if (!moduleIsRunning) return '';
+    switch (status) {
+      case 'queued':
+        return actionForm('call',       'Call',       'btn btn-primary btn-compact')
+             + actionForm('skip',       'Skip',       'btn btn-ghost btn-compact');
+      case 'called':
+        return actionForm('skip',       'Move to End',  'btn btn-ghost btn-compact')
+             + actionForm('disqualify', 'Disqualify',   'btn btn-ghost btn-compact link-delete');
+      case 'on_stage':
+        return actionForm('complete', 'Mark Completed', 'btn btn-primary btn-compact');
+      case 'completed':
+        return '<span class="muted italic">Completed</span>';
+      case 'disqualified':
+        return actionForm('restore', 'Restore', 'btn btn-ghost btn-compact');
+      case 'skipped':
+        return actionForm('call', 'Call', 'btn btn-primary btn-compact');
+      default:
+        return '';
+    }
+  }
+
+  function render(rows) {
+    container.innerHTML = '';
+    rows.forEach(r => {
+      const node = rowTemplate.content.firstElementChild.cloneNode(true);
+      node.dataset.appId = r.application_id;
+      node.dataset.status = r.status;
+      node.classList.toggle('run-row--called', r.status === 'called');
+      node.classList.toggle('run-row--on-stage', r.status === 'on_stage');
+      node.classList.toggle('run-row--completed', r.status === 'completed');
+      node.classList.toggle('run-row--disqualified', r.status === 'disqualified');
+
+      node.querySelector('.run-row__num').textContent = r.position || '·';
+      const photo = node.querySelector('.run-row__photo');
+      if (r.photo_url) { photo.src = '/static/' + r.photo_url; }
+      else { photo.style.visibility = 'hidden'; }
+      node.querySelector('.run-row__name').textContent = r.name;
+      node.querySelector('.run-row__institution').textContent = r.institution || '';
+
+      const topicEl = node.querySelector('.run-row__topic');
+      topicEl.textContent = r.topic ? `Topic: "${r.topic}"` : '';
+
+      const countdownEl = node.querySelector('.run-row__countdown');
+      if (r.status === 'called' && r.seconds_left !== null) {
+        if (r.seconds_left > 0) {
+          countdownEl.innerHTML = `<span class="countdown-bubble">⏱ ${r.seconds_left}s to choose topic</span>`;
+        } else {
+          countdownEl.innerHTML = '<span class="countdown-bubble unavailable">Unavailable — no response</span>';
+        }
+      } else {
+        countdownEl.textContent = '';
+      }
+
+      const statusEl = node.querySelector('.run-row__status');
+      const labels = {
+        queued: 'In Queue', called: 'Called', on_stage: 'On Stage',
+        completed: 'Completed', disqualified: 'Disqualified', skipped: 'Skipped'
+      };
+      statusEl.innerHTML = `<span class="chip chip--${r.status} chip--small">${labels[r.status] || r.status}</span>`;
+
+      const actionsEl = node.querySelector('.run-row__actions');
+      actionsEl.innerHTML = buildButtons(r.status).replace(/__APPID__/g, r.application_id);
+
+      container.appendChild(node);
+    });
+  }
+
+  function poll() {
+    fetch(`/admin/competition/${competitionId}/module/${moduleId}/state.json`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) render(data.rows);
+      })
+      .catch(() => { /* network glitch — try again next tick */ });
+  }
+
+  poll();
+  setInterval(poll, 3000);
+})();
+</script>
+{% endblock %}

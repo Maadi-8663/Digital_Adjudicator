@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Results: {{ m.name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="back-link">
+    <a href="{{ url_for('admin.competition_detail', competition_id=t.id) }}">← Back to {{ t.name }}</a>
+  </div>
+
+  <section class="comp-hero">
+    <div class="eyebrow">Module Results</div>
+    <h1>{{ m.name }}</h1>
+    <p class="muted italic" style="margin-top: 0.6rem;">{{ t.name }} · {{ m.status_label }}</p>
+  </section>
+
+  <div class="divider-thin"></div>
+
+  {% if rows | selectattr('total') | list | length == 0 %}
+    <div class="empty-state">
+      <div class="ornament">❦</div>
+      <p>No scores submitted yet.</p>
+      <p class="muted italic">Results will appear here once judges submit ratings.</p>
+    </div>
+  {% else %}
+    <div class="results-list">
+      {% for r in rows %}
+        <div class="result-row {% if r.position == 1 %}result-row--first{% endif %}">
+          <div class="result-row__position">
+            {% if r.position %}
+              <span class="position-pill">#{{ r.position }}</span>
+            {% else %}
+              <span class="muted italic">—</span>
+            {% endif %}
+          </div>
+          {% if r.app.photo_url %}
+            <img class="result-row__photo" src="{{ url_for('static', filename=r.app.photo_url) }}" alt=""/>
+          {% else %}
+            <div></div>
+          {% endif %}
+          <div class="result-row__body">
+            <div class="result-row__name">{{ r.app.full_name }}</div>
+            <div class="muted italic" style="font-size: 0.9rem;">{{ r.app.institution }}</div>
+            {% if r.am.topic %}
+              <div class="gold italic" style="margin-top: 0.4rem;">"{{ r.am.topic.title }}"</div>
+            {% endif %}
+            {% if r.scores %}
+              <div class="result-row__scores" style="margin-top: 0.6rem;">
+                {% for s in r.scores %}
+                  <span class="score-chip">
+                    {{ s.judge.full_name or s.judge.username }}: <strong>{{ s.rating }}</strong>
+                  </span>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+          <div class="result-row__totals">
+            {% if r.total is not none %}
+              <div class="result-total">
+                <div class="result-total__big">{{ '%.1f' % r.total }}</div>
+                <div class="muted italic" style="font-size: 0.78rem;">Total · {{ r.judge_count }} judge{{ '' if r.judge_count == 1 else 's' }}</div>
+                <div class="muted italic" style="font-size: 0.78rem;">Avg {{ '%.2f' % r.avg }}</div>
+              </div>
+            {% elif r.am.status == 'disqualified' %}
+              <span class="chip chip--disqualified">Disqualified</span>
+            {% else %}
+              <span class="muted italic">No scores</span>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    {% if rows | length > 0 and rows[0].scores %}
+      <p class="muted italic" style="text-align: center; margin-top: 2rem; font-size: 0.95rem;">
+        Total is the sum of every judge's rating. Position is assigned by total.
+      </p>
+    {% endif %}
+  {% endif %}
+
+  <!-- Feedback panel (admin sees all judges' feedback) -->
+  {% set has_feedback = false %}
+  {% for r in rows %}{% for s in r.scores %}{% if s.feedback %}{% set has_feedback = true %}{% endif %}{% endfor %}{% endfor %}
+  {% if has_feedback %}
+    <section class="section-bar" style="margin-top: 3rem;">
+      <h2 class="section-title">Judges' Feedback</h2>
+    </section>
+    {% for r in rows %}
+      {% if r.scores | selectattr('feedback') | list | length > 0 %}
+        <div class="card card--soft" style="margin-bottom: 1rem;">
+          <h4 style="margin: 0 0 0.4rem;">{{ r.app.full_name }}</h4>
+          {% for s in r.scores %}
+            {% if s.feedback %}
+              <div style="margin-top: 0.7rem; padding-top: 0.7rem; border-top: 1px solid var(--panel-border);">
+                <div class="eyebrow">{{ s.judge.full_name or s.judge.username }} · {{ s.rating }}/10</div>
+                <p class="italic" style="margin-top: 0.3rem;">"{{ s.feedback }}"</p>
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+</div>
+{% endblock %}

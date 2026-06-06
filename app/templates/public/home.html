@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Digital Adjudicator · Debating Competitions{% endblock %}
+
+{% block content %}
+{% macro competition_card(t) %}
+  <a href="{{ url_for('public.competition_detail', competition_id=t.id) }}" class="comp-card">
+    <div class="comp-card__chip chip chip--{{ t.status }}">{{ t.status_label }}</div>
+    <h3 class="comp-card__title">{{ t.name }}</h3>
+    <p class="comp-card__meta">
+      {% if t.start_date and t.end_date %}
+        {{ t.start_date.strftime('%d %b %Y') }} &nbsp;—&nbsp; {{ t.end_date.strftime('%d %b %Y') }}
+      {% endif %}
+    </p>
+    <div class="comp-card__stats">
+      <span><strong>{{ t.modules | length }}</strong> module{{ '' if t.modules|length == 1 else 's' }}</span>
+      {% if t.venue %}<span>{{ t.venue }}</span>{% endif %}
+    </div>
+    {% if t.description %}
+      <div class="comp-card__format">
+        <em>{{ t.description[:120] }}{% if t.description|length > 120 %}…{% endif %}</em>
+      </div>
+    {% endif %}
+  </a>
+{% endmacro %}
+
+<section class="public-hero">
+  <div class="public-hero__logo">
+    <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="" />
+  </div>
+  <div class="eyebrow">Welcome to the Hall</div>
+  <h1>The Stage Awaits</h1>
+  <p class="public-hero__tagline">A quiet companion for the debating hall.</p>
+  <p class="public-hero__sub">Browse open competitions, apply with a single form, and follow your standings.</p>
+</section>
+
+<div class="container">
+
+  {% if my_apps %}
+    <section class="section-bar">
+      <h2 class="section-title">Your Applications</h2>
+      <a href="{{ url_for('participant.dashboard') }}" class="link-soft">Go to my dashboard →</a>
+    </section>
+    <div class="my-apps-grid">
+      {% for app in my_apps %}
+        {% set t = app.competition %}
+        <a href="{{ url_for('public.competition_detail', competition_id=t.id) }}" class="my-app-card">
+          <span class="chip chip--{{ app.status }} chip--small">{{ app.status_label }}</span>
+          <h4 style="margin: 0.5rem 0;">{{ t.name }}</h4>
+          <p class="muted italic" style="font-size: 0.9rem; margin: 0;">
+            Applied {{ app.submitted_at.strftime('%d %b') }} ·
+            {{ app.selected_modules | length }} module{{ '' if app.selected_modules|length == 1 else 's' }}
+          </p>
+        </a>
+      {% endfor %}
+    </div>
+    <div class="divider-thin"></div>
+  {% endif %}
+
+  {% if open_now %}
+    <section class="section-bar">
+      <h2 class="section-title">Open for Registration</h2>
+    </section>
+    <div class="comp-grid">
+      {% for t in open_now %}
+        {{ competition_card(t) }}
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if underway %}
+    <section class="section-bar" style="margin-top: 3rem;">
+      <h2 class="section-title">Underway</h2>
+    </section>
+    <div class="comp-grid">
+      {% for t in underway %}
+        {{ competition_card(t) }}
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if registration_closed %}
+    <section class="section-bar" style="margin-top: 3rem;">
+      <h2 class="section-title">Registration Closed</h2>
+    </section>
+    <div class="comp-grid">
+      {% for t in registration_closed %}
+        {{ competition_card(t) }}
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if completed %}
+    <section class="section-bar" style="margin-top: 3rem;">
+      <h2 class="section-title">Recently Concluded</h2>
+    </section>
+    <div class="comp-grid">
+      {% for t in completed %}
+        {{ competition_card(t) }}
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if not (open_now or underway or registration_closed or completed) %}
+    <div class="empty-state" style="padding: 5rem 1rem;">
+      <div class="ornament">❦</div>
+      <p style="font-size: 1.3rem;">The hall is quiet at the moment.</p>
+      <p class="muted italic">No competitions are open right now. Check back soon.</p>
+    </div>
+  {% endif %}
+</div>
+
+{% endblock %}

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 88" fill="#BE9A55" aria-label="Digital Adjudicator">
+  <!-- Microphone head -->
+  <ellipse cx="32" cy="6" rx="4" ry="6.5"/>
+  <!-- Mic neck / thin connector -->
+  <rect x="31" y="12" width="2" height="2.5"/>
+  <!-- Mic stem rising to lectern -->
+  <rect x="30" y="14.5" width="4" height="12.5"/>
+  <!-- Lectern surface (angled trapezoid) -->
+  <polygon points="10,27 54,27 58.5,40 5.5,40"/>
+  <!-- Lectern front lip -->
+  <rect x="7.5" y="40" width="49" height="3"/>
+  <!-- Main column, slightly tapered toward the bottom -->
+  <polygon points="25,43 39,43 37,62 27,62"/>
+  <!-- Mid ring / joint -->
+  <rect x="22" y="62" width="20" height="3"/>
+  <!-- Lower column section -->
+  <polygon points="28,65 36,65 35.5,78 28.5,78"/>
+  <!-- Base flare -->
+  <polygon points="19.5,78 44.5,78 48,82 16,82"/>
+  <!-- Floor platform -->
+  <rect x="13.5" y="82" width="37" height="4"/>
+</svg>

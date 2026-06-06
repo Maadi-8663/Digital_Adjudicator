@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · Digital Adjudicator{% endblock %}
+
+{% block content %}
+<div class="container container--narrow">
+  <div class="dashboard-greeting">
+    <div class="eyebrow">{{ current_user.role | capitalize }}</div>
+    <h1>Welcome, {{ current_user.full_name.split(' ')[0] if current_user.full_name else current_user.username }}.</h1>
+    <p class="quote">"You stand at the threshold of the hall. The tournament workspace will appear here once the rest of the modules are wired."</p>
+  </div>
+
+  <div class="card card--soft" style="margin-top: 2rem;">
+    <h3 style="text-align: center; margin-bottom: 1rem;">Account</h3>
+    <div class="divider-thin"></div>
+    <p><strong style="color: var(--gold);">Name &middot;</strong> {{ current_user.full_name }}</p>
+    <p><strong style="color: var(--gold);">Username &middot;</strong> {{ current_user.username }}</p>
+    <p><strong style="color: var(--gold);">Email &middot;</strong> {{ current_user.email }}</p>
+    <p><strong style="color: var(--gold);">Institution &middot;</strong> {{ current_user.institution }}</p>
+    <p><strong style="color: var(--gold);">Role &middot;</strong> <em>{{ current_user.role | capitalize }}</em></p>
+    {% if current_user.team_name %}
+    <p><strong style="color: var(--gold);">Team &middot;</strong> {{ current_user.team_name }}</p>
+    {% endif %}
+  </div>
+
+  <div style="text-align: center; margin-top: 2.4rem;">
+    <a href="{{ url_for('auth.logout') }}" class="btn btn-ghost">Sign Out</a>
+  </div>
+</div>
+{% endblock %}

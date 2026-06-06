@@ -1,0 +1,330 @@
+{% extends "base.html" %}
+{% block title %}Judging: {{ m.name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="back-link">
+    <a href="{{ url_for('judge.dashboard') }}">← Back to dashboard</a>
+  </div>
+
+  <section class="comp-hero">
+    <div class="eyebrow">Judging · {{ m.competition.name }}</div>
+    <h1>{{ m.name }}</h1>
+    <p class="muted italic" style="margin-top: 0.6rem;">{{ m.status_label }}</p>
+  </section>
+
+  <div class="divider-thin"></div>
+
+  <!-- Current stage area -->
+  <div id="stage-mount">
+    {% if current_app and current_am %}
+      {% include "judge/_scoring_panel.html" %}
+    {% else %}
+      <div class="empty-state">
+        <div class="ornament">❦</div>
+        <p>The stage is quiet.</p>
+        <p class="muted italic">When a participant goes on stage, your scoring panel will appear here.</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Pending scores (within 15-min window) -->
+  {% if pending %}
+    <section class="section-bar" style="margin-top: 3rem;">
+      <h2 class="section-title">Pending Your Score</h2>
+    </section>
+    <p class="muted italic" style="margin-bottom: 1rem;">
+      These performances ended but you have not yet submitted. The 15-minute window is ticking.
+    </p>
+    <div class="run-list">
+      {% for p in pending %}
+        <div class="run-row run-row--called">
+          <div class="run-row__num">{{ p.am.turn_position or '·' }}</div>
+          {% if p.app.photo_url %}
+            <img class="run-row__photo" src="{{ url_for('static', filename=p.app.photo_url) }}" alt=""/>
+          {% else %}
+            <div></div>
+          {% endif %}
+          <div class="run-row__body">
+            <div class="run-row__name">{{ p.app.full_name }}</div>
+            <div class="run-row__institution muted italic">{{ p.app.institution }}</div>
+            {% if p.am.topic %}
+              <div class="run-row__topic gold italic">"{{ p.am.topic.title }}"</div>
+            {% endif %}
+            <div class="run-row__countdown">
+              <span class="countdown-bubble">⏱ {{ (p.am.scoring_seconds_left // 60) }}:{{ '{:02d}'.format(p.am.scoring_seconds_left % 60) }} left to score</span>
+            </div>
+          </div>
+          <div></div>
+          <div class="run-row__actions">
+            <a href="#" data-app-id="{{ p.app.id }}" class="btn btn-primary btn-compact reopen-score">Open Sheet</a>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
+
+<script>
+(function () {
+  const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+  const moduleId = {{ m.id }};
+  const stageMount = document.getElementById('stage-mount');
+
+  // ===== Render full scoring panel =====
+  function renderScoringPanel(curr, state) {
+    if (!curr) {
+      stageMount.innerHTML = `
+        <div class="empty-state">
+          <div class="ornament">❦</div>
+          <p>The stage is quiet.</p>
+          <p class="muted italic">When a participant goes on stage, your scoring panel will appear here.</p>
+        </div>`;
+      return;
+    }
+
+    const photo = curr.photo_url ? `<img src="/static/${curr.photo_url}" class="stage-card__photo" alt=""/>` : '';
+    const topic = curr.topic ? `<div class="stage-card__topic"><div class="eyebrow">Topic</div><p>"${curr.topic}"</p></div>` : '';
+    const elapsed = formatTime(state.elapsed_seconds || 0);
+
+    // Timer controls based on state
+    let timerControls = '';
+    if (state.timer_state === 'not_started') {
+      timerControls = `<button class="btn btn-primary timer-btn" data-action="start">▶ Start Timer</button>`;
+    } else if (state.timer_state === 'running') {
+      timerControls = `
+        <button class="btn btn-ghost timer-btn" data-action="pause">⏸ Pause</button>
+        <button class="btn btn-ghost link-delete timer-btn" data-action="stop">⏹ Stop</button>`;
+    } else if (state.timer_state === 'paused') {
+      timerControls = `
+        <button class="btn btn-primary timer-btn" data-action="resume">▶ Resume</button>
+        <button class="btn btn-ghost link-delete timer-btn" data-action="stop">⏹ Stop</button>`;
+    } else if (state.timer_state === 'stopped') {
+      timerControls = `<span class="muted italic">Timer stopped at ${elapsed}</span>`;
+    }
+
+    // Scoring section (only after speech is stopped)
+    let scoringSection = '';
+    if (state.timer_state === 'stopped' && !state.submitted) {
+      const secsLeft = state.scoring_seconds_left || 0;
+      const mins = Math.max(0, Math.floor(secsLeft / 60));
+      const secs = Math.max(0, secsLeft % 60);
+      const ratingValue = state.rating !== null ? state.rating : 7;
+      scoringSection = `
+        <div class="scoring-section">
+          <div class="scoring-window">
+            <span class="eyebrow">Scoring window</span>
+            <span class="countdown-bubble ${secsLeft <= 60 ? 'unavailable' : ''}">
+              ${mins}:${secs.toString().padStart(2, '0')} left
+            </span>
+          </div>
+          <div class="form-group">
+            <label for="rating-slider">Rating <span style="color: var(--gold); font-size: 1.3rem; margin-left: 0.5rem;" id="rating-display">${ratingValue}</span> / 10</label>
+            <input type="range" min="0" max="10" step="0.5" value="${ratingValue}" id="rating-slider" class="rating-slider" />
+          </div>
+          <div class="form-group">
+            <label for="feedback-input">Feedback for the participant</label>
+            <textarea id="feedback-input" rows="4" placeholder="Speak honestly. They will see this when results are announced.">${state.feedback || ''}</textarea>
+          </div>
+          <button class="btn btn-primary btn--block" id="submit-score-btn">Submit Score</button>
+          <div id="score-status" class="muted italic" style="text-align: center; margin-top: 0.8rem;"></div>
+        </div>`;
+    } else if (state.submitted) {
+      scoringSection = `
+        <div class="scoring-section">
+          <div class="flash flash-success" style="text-align: center;">
+            <strong>Your score:</strong> ${state.rating} / 10 — submitted.
+          </div>
+        </div>`;
+    }
+
+    stageMount.innerHTML = `
+      <div class="stage-card stage-card--with-score">
+        ${photo}
+        <h2 class="stage-card__name">${curr.name}</h2>
+        <p class="muted italic">${curr.institution || ''}</p>
+        ${topic}
+
+        <!-- Speech timer -->
+        <div class="speech-timer">
+          <div class="speech-timer__display ${state.timer_state}" id="timer-display">${elapsed}</div>
+          <div class="speech-timer__controls">${timerControls}</div>
+        </div>
+
+        <!-- Notes -->
+        <div class="form-group" style="text-align: left;">
+          <label for="notes-area">Your Private Notes
+            <span id="notes-save-status" class="muted italic" style="margin-left: 0.8rem; font-size: 0.85rem;"></span>
+          </label>
+          <textarea id="notes-area" rows="4" placeholder="Type freely during the speech. Only you can see this. Saves as you type.">${state.notes || ''}</textarea>
+        </div>
+
+        ${scoringSection}
+      </div>`;
+
+    wireUpControls(curr.application_id, state);
+  }
+
+  function formatTime(secs) {
+    if (secs < 0) secs = 0;
+    const m = Math.floor(secs / 60), r = secs % 60;
+    return `${m}:${r.toString().padStart(2, '0')}`;
+  }
+
+  // ===== Wire controls =====
+  let notesSaveTimer = null;
+  let localTimerInterval = null;
+  let lastServerElapsed = 0;
+  let lastServerSyncAt = 0;
+  let currentTimerState = 'not_started';
+  let currentAppId = null;
+
+  function wireUpControls(applicationId, state) {
+    currentAppId = applicationId;
+    currentTimerState = state.timer_state;
+    lastServerElapsed = state.elapsed_seconds || 0;
+    lastServerSyncAt = Date.now();
+
+    // Timer buttons
+    document.querySelectorAll('.timer-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const action = btn.dataset.action;
+        fetch(`/judge/module/${moduleId}/timer/${applicationId}/${action}`, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/json' },
+          body: '{}'
+        })
+        .then(r => r.json())
+        .then(d => { if (d.ok) poll(); });
+      });
+    });
+
+    // Notes autosave (debounced 1s)
+    const notesArea = document.getElementById('notes-area');
+    if (notesArea) {
+      notesArea.addEventListener('input', () => {
+        if (notesSaveTimer) clearTimeout(notesSaveTimer);
+        notesSaveTimer = setTimeout(() => {
+          fetch(`/judge/module/${moduleId}/score/${applicationId}/notes`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ notes: notesArea.value })
+          })
+          .then(r => r.json())
+          .then(d => {
+            const statusEl = document.getElementById('notes-save-status');
+            if (statusEl) {
+              statusEl.textContent = d.ok ? 'Saved.' : 'Could not save.';
+              statusEl.style.color = d.ok ? 'var(--success)' : 'var(--error)';
+              setTimeout(() => { statusEl.textContent = ''; }, 1500);
+            }
+          });
+        }, 1000);
+      });
+    }
+
+    // Rating slider live display
+    const slider = document.getElementById('rating-slider');
+    const display = document.getElementById('rating-display');
+    if (slider && display) {
+      slider.addEventListener('input', () => { display.textContent = slider.value; });
+    }
+
+    // Submit score
+    const submitBtn = document.getElementById('submit-score-btn');
+    if (submitBtn) {
+      submitBtn.addEventListener('click', () => {
+        const rating = parseFloat(slider.value);
+        const feedback = document.getElementById('feedback-input').value;
+        const notes = notesArea ? notesArea.value : '';
+        const statusEl = document.getElementById('score-status');
+
+        submitBtn.disabled = true;
+        statusEl.textContent = 'Submitting…';
+
+        fetch(`/judge/module/${moduleId}/score/${applicationId}/submit`, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ rating, feedback, notes })
+        })
+        .then(r => r.json())
+        .then(d => {
+          if (d.ok) {
+            statusEl.style.color = 'var(--success)';
+            statusEl.textContent = `Submitted. ${d.rating} / 10.`;
+            setTimeout(() => poll(), 800);
+          } else {
+            statusEl.style.color = 'var(--error)';
+            statusEl.textContent = d.error || 'Could not submit.';
+            submitBtn.disabled = false;
+          }
+        });
+      });
+    }
+
+    // Start local clock tick if running
+    if (localTimerInterval) clearInterval(localTimerInterval);
+    if (state.timer_state === 'running') {
+      localTimerInterval = setInterval(() => {
+        const delta = Math.floor((Date.now() - lastServerSyncAt) / 1000);
+        const liveElapsed = lastServerElapsed + delta;
+        const timerEl = document.getElementById('timer-display');
+        if (timerEl) timerEl.textContent = formatTime(liveElapsed);
+      }, 250);
+    }
+  }
+
+  // ===== Poll loop =====
+  function poll() {
+    fetch(`/judge/module/${moduleId}/state.json`)
+      .then(r => r.json())
+      .then(data => {
+        if (!data.ok) return;
+        const curr = data.current;
+        if (!curr) {
+          if (localTimerInterval) clearInterval(localTimerInterval);
+          renderScoringPanel(null, null);
+          return;
+        }
+        // Fetch detailed score state
+        fetch(`/judge/module/${moduleId}/score/${curr.application_id}/state.json`)
+          .then(r => r.json())
+          .then(state => {
+            if (state.ok) renderScoringPanel(curr, state);
+          });
+      });
+  }
+
+  poll();
+  setInterval(poll, 4000);
+
+  // ===== Pending scores: reopen sheet =====
+  document.querySelectorAll('.reopen-score').forEach(link => {
+    link.addEventListener('click', e => {
+      e.preventDefault();
+      const appId = link.dataset.appId;
+      // Fetch state for this performance and render the panel
+      fetch(`/judge/module/${moduleId}/score/${appId}/state.json`)
+        .then(r => r.json())
+        .then(state => {
+          if (!state.ok) return;
+          // Construct a fake "curr" object — we need app details though.
+          // Easier: just scroll up to top, the polling will pick it up if on stage.
+          // For pending scores we need a different approach; for now reload page.
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          // Simulate the "current" with what we know from the row
+          const row = link.closest('.run-row');
+          const fakeCurrent = {
+            application_id: parseInt(appId, 10),
+            name: row.querySelector('.run-row__name').textContent,
+            institution: row.querySelector('.run-row__institution').textContent,
+            photo_url: row.querySelector('.run-row__photo') ? row.querySelector('.run-row__photo').src.replace(/^.*\/static\//, '') : null,
+            topic: row.querySelector('.run-row__topic') ? row.querySelector('.run-row__topic').textContent.replace(/^"|"$/g, '') : null,
+          };
+          renderScoringPanel(fakeCurrent, state);
+        });
+    });
+  });
+})();
+</script>
+{% endblock %}

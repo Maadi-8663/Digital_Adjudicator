@@ -1,0 +1,15 @@
+<!-- Placeholder rendered server-side on first load. JS rebuilds it after polling. -->
+<div class="stage-card">
+  {% if current_app.photo_url %}
+    <img src="{{ url_for('static', filename=current_app.photo_url) }}" class="stage-card__photo" alt=""/>
+  {% endif %}
+  <h2 class="stage-card__name">{{ current_app.full_name }}</h2>
+  <p class="muted italic">{{ current_app.institution }}</p>
+  {% if current_am.topic %}
+    <div class="stage-card__topic">
+      <div class="eyebrow">Topic</div>
+      <p>"{{ current_am.topic.title }}"</p>
+    </div>
+  {% endif %}
+  <p class="muted italic" style="margin-top: 1.4rem;">Loading scoring panel…</p>
+</div>

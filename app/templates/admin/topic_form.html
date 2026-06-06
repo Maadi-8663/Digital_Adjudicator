@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Add Topic · {{ m.name }}{% endblock %}
+
+{% block content %}
+<div class="container container--narrow">
+  <div class="back-link">
+    <a href="{{ url_for('admin.module_detail', competition_id=t.id, module_id=m.id) }}">← Back to {{ m.name }}</a>
+  </div>
+
+  <div class="card">
+    <div class="eyebrow" style="text-align: center;">{{ m.name }}</div>
+    <h2 class="card-title">Add Topics</h2>
+    <p class="card-subtitle">Participants will choose one when called to the stage.</p>
+
+    <div class="ornament-rule">❦</div>
+
+    <!-- Single topic -->
+    <form method="POST" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="form-group">
+        {{ form.title.label }}
+        {{ form.title() }}
+        {% if form.title.errors %}<div class="error">{{ form.title.errors[0] }}</div>{% endif %}
+      </div>
+      <button type="submit" name="single_submit" value="1" class="btn btn-primary btn--block">Add This Topic</button>
+    </form>
+
+    <div class="ornament-rule">or</div>
+
+    <!-- Bulk paste -->
+    <form method="POST" novalidate>
+      {{ bulk_form.hidden_tag() }}
+      <div class="form-group">
+        {{ bulk_form.topics_block.label }}
+        {{ bulk_form.topics_block() }}
+        {% if bulk_form.topics_block.errors %}<div class="error">{{ bulk_form.topics_block.errors[0] }}</div>{% endif %}
+        <p class="muted italic" style="font-size: 0.9rem; margin-top: 0.4rem;">
+          Paste any number of topics, one per line. They will be added in order.
+        </p>
+      </div>
+      <button type="submit" name="bulk_submit" value="1" class="btn btn-ghost btn--block">Add All Topics</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

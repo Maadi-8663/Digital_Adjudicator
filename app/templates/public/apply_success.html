@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Application Received · {{ t.name }}{% endblock %}
+
+{% block content %}
+<div class="container container--narrow">
+  <div class="card" style="text-align: center;">
+    <div class="success-ornament">
+      <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="" style="height: 80px;"/>
+    </div>
+
+    <div class="eyebrow">Application Received</div>
+    <h2 class="card-title" style="margin-top: 0.5rem;">Best of Luck</h2>
+    <p class="card-subtitle">Your application to <strong>{{ t.name }}</strong> has been received.</p>
+
+    <div class="ornament-rule">❦</div>
+
+    <div style="text-align: left;">
+      <p class="muted italic" style="margin-bottom: 1rem;">A summary of what you submitted:</p>
+      <div class="card card--soft" style="text-align: left;">
+        <p><strong style="color: var(--gold);">Name &middot;</strong> {{ application.full_name }}</p>
+        <p><strong style="color: var(--gold);">Institution &middot;</strong> {{ application.institution }}</p>
+        <p><strong style="color: var(--gold);">Modules &middot;</strong>
+          {% for m in application.selected_modules %}
+            {{ m.name }}{% if not loop.last %}, {% endif %}
+          {% endfor %}
+        </p>
+        <p><strong style="color: var(--gold);">Submitted &middot;</strong>
+          {{ application.submitted_at.strftime('%d %b %Y at %H:%M') }}
+        </p>
+      </div>
+
+      <p class="muted italic" style="text-align: center; margin-top: 1.6rem;">
+        You will see this competition on your dashboard, along with any announcements as they come.
+      </p>
+    </div>
+
+    <div class="btn-row" style="margin-top: 2rem;">
+      <a href="{{ url_for('public.home') }}" class="btn btn-ghost">Browse Competitions</a>
+      <a href="{{ url_for('participant.dashboard') }}" class="btn btn-primary">Go to My Dashboard</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

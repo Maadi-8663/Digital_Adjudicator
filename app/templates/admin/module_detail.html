@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}{{ m.name }} · {{ t.name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="back-link">
+    <a href="{{ url_for('admin.competition_detail', competition_id=t.id) }}">← Back to {{ t.name }}</a>
+  </div>
+
+  <section class="comp-hero">
+    <div class="eyebrow">Module · Precedence {{ m.precedence }}</div>
+    <h1>{{ m.name }}</h1>
+    {% if m.description %}
+      <p class="muted italic" style="max-width: 720px; margin: 0.8rem auto 0; text-align: center;">{{ m.description }}</p>
+    {% endif %}
+
+    <div style="margin-top: 1rem;">
+      {% if m.is_complete %}
+        <span class="chip" style="color: var(--success);">✓ Ready</span>
+      {% else %}
+        <span class="chip" style="color: var(--error);">
+          Incomplete — needs {{ m.missing_pieces | join(' and ') }}
+        </span>
+      {% endif %}
+    </div>
+  </section>
+
+  <div class="divider-thin"></div>
+
+  <section class="section-bar">
+    <h2 class="section-title">Topics</h2>
+    <div class="btn-row" style="flex: 0 0 auto;">
+      <a href="{{ url_for('admin.add_topic', competition_id=t.id, module_id=m.id) }}" class="btn btn-primary btn-compact">Add Topic</a>
+      <a href="{{ url_for('admin.edit_module', competition_id=t.id, module_id=m.id) }}" class="btn btn-ghost btn-compact">Edit Module</a>
+    </div>
+  </section>
+
+  {% if m.topics %}
+    <div class="round-list">
+      {% for tp in m.topics %}
+        <div class="round-row">
+          <div class="round-row__num topic-num">{{ tp.display_order }}</div>
+          <div class="round-row__body">
+            <p style="margin: 0; font-family: var(--serif-display); font-size: 1.1rem; color: var(--text-primary);">
+              "{{ tp.title }}"
+            </p>
+          </div>
+          <div class="round-row__meta">
+            <form method="POST" action="{{ url_for('admin.delete_topic', competition_id=t.id, module_id=m.id, topic_id=tp.id) }}" style="display: inline;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+              <button type="submit" class="link-soft link-delete" onclick="return confirm('Remove this topic?');">Remove</button>
+            </form>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <div class="ornament">❧</div>
+      <p>No topics added yet.</p>
+      <p class="muted italic">Add at least one topic. Participants will choose from these when called to stage.</p>
+    </div>
+  {% endif %}
+
+  <!-- Judges -->
+  <section class="section-bar" style="margin-top: 2.6rem;">
+    <h2 class="section-title">Judges</h2>
+    <a href="{{ url_for('admin.add_judge', competition_id=t.id, module_id=m.id) }}" class="btn btn-primary btn-compact">Add Judge</a>
+  </section>
+
+  {% if m.judges %}
+    <div class="round-list">
+      {% for j in m.judges %}
+        <div class="round-row">
+          <div class="round-row__num topic-num">❦</div>
+          <div class="round-row__body">
+            <div class="round-row__title">
+              <strong>{{ j.full_name or j.username }}</strong>
+            </div>
+            <p class="muted italic">Username: <code style="color: var(--gold);">{{ j.username }}</code></p>
+          </div>
+          <div class="round-row__meta">
+            <form method="POST" action="{{ url_for('admin.remove_judge', competition_id=t.id, module_id=m.id, judge_id=j.id) }}" style="display: inline;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+              <button type="submit" class="link-soft link-delete" onclick="return confirm('Remove this judge from the module?');">Remove</button>
+            </form>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <div class="ornament">❦</div>
+      <p>No judges yet.</p>
+      <p class="muted italic">Create a judge account here. Hand them the username and password in person.</p>
+    </div>
+  {% endif %}
+
+  <div class="divider-thin" style="margin-top: 3rem;"></div>
+  <div style="text-align: center; padding-top: 1rem;">
+    <form method="POST" action="{{ url_for('admin.delete_module', competition_id=t.id, module_id=m.id) }}" style="display: inline;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <button type="submit" class="link-soft link-delete" onclick="return confirm('Delete this module and all its topics and judges? This cannot be undone.');">
+        Delete this module
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Participant · Digital Adjudicator{% endblock %}
+
+{% block content %}
+<div class="container">
+  <section class="dashboard-greeting">
+    <div class="eyebrow">Participant</div>
+    <h1>Welcome, {{ current_user.full_name.split(' ')[0] if current_user.full_name else current_user.username }}.</h1>
+    <p class="quote">"The podium waits."</p>
+  </section>
+
+  {% if apps %}
+    <section class="section-bar">
+      <h2 class="section-title">My Competitions</h2>
+      <a href="{{ url_for('public.home') }}" class="btn btn-ghost btn-compact">Browse More</a>
+    </section>
+
+    <div class="comp-grid">
+      {% for app in apps %}
+        {% set c = app.competition %}
+        {% set is_running = c.status in ('in_progress', 'completed') %}
+        <a href="{% if is_running %}{{ url_for('participant.competition_schedule', competition_id=c.id) }}{% else %}{{ url_for('public.competition_detail', competition_id=c.id) }}{% endif %}" class="comp-card">
+          <div class="comp-card__chip chip chip--{{ c.status }}">{{ c.status_label }}</div>
+          <h3 class="comp-card__title">{{ c.name }}</h3>
+          <p class="comp-card__meta">
+            {% if c.start_date and c.end_date %}
+              {{ c.start_date.strftime('%d %b %Y') }} — {{ c.end_date.strftime('%d %b %Y') }}
+            {% endif %}
+          </p>
+          <div class="comp-card__stats">
+            <span><strong>{{ app.selected_modules | length }}</strong> module{{ '' if app.selected_modules|length == 1 else 's' }}</span>
+            <span class="muted italic">{{ app.status_label }}</span>
+          </div>
+          <div class="comp-card__format">
+            <em>{% if is_running %}View schedule →{% else %}Modules: {% for m in app.selected_modules %}{{ m.name }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}</em>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <div class="ornament">❦</div>
+      <p>You have not applied to any competitions yet.</p>
+      <p class="muted italic">Browse what is open and apply when you are ready.</p>
+      <div style="margin-top: 1.6rem;">
+        <a href="{{ url_for('public.home') }}" class="btn btn-primary">Browse Competitions</a>
+      </div>
+    </div>
+  {% endif %}
+
+  <section class="section-bar" style="margin-top: 3rem;">
+    <h2 class="section-title">Announcements</h2>
+  </section>
+
+  {% if announcements %}
+    <div class="announcement-list">
+      {% for a in announcements %}
+        <div class="announcement-card">
+          <div class="announcement-card__head">
+            <div class="eyebrow">
+              {{ a.created_at.strftime('%d %b · %H:%M') }} ·
+              {{ a.competition.name }}{% if a.module %} · {{ a.module.name }}{% endif %}
+            </div>
+          </div>
+          <h4 class="announcement-card__title">{{ a.title }}</h4>
+          {% if a.body %}<p class="announcement-card__body">{{ a.body }}</p>{% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="card card--soft">
+      <p class="muted italic" style="text-align: center;">
+        No announcements yet. Anything posted by the competition hosts will appear here.
+      </p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

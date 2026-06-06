@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Overall · {{ c.name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="back-link">
+    <a href="{{ url_for('participant.competition_schedule', competition_id=c.id) }}">← Back to schedule</a>
+  </div>
+
+  <section class="comp-hero">
+    <div class="eyebrow">Overall Standings</div>
+    <h1>{{ c.name }}</h1>
+    <p class="muted italic">{{ c.status_label }}</p>
+  </section>
+
+  {% if my_row %}
+    <div class="card my-result-card">
+      <div class="eyebrow" style="text-align: center;">Your Overall Result</div>
+      <div class="my-position-pill">#{{ my_row.position }}</div>
+      <h2 style="text-align: center; margin-top: 0.5rem;">
+        {{ '%.1f' % my_row.total }} <span class="muted italic" style="font-size: 0.7em;">total</span>
+      </h2>
+      <p class="muted italic" style="text-align: center;">
+        Across {{ my_row.module_count }} module{{ '' if my_row.module_count == 1 else 's' }} · out of {{ rows | length }} participant{{ '' if rows|length == 1 else 's' }}
+      </p>
+    </div>
+  {% endif %}
+
+  <div class="divider-thin"></div>
+
+  <section class="section-bar">
+    <h2 class="section-title">Final Standings</h2>
+  </section>
+
+  {% if not rows %}
+    <div class="empty-state">
+      <div class="ornament">❦</div>
+      <p>The standings are still being tallied.</p>
+    </div>
+  {% else %}
+    <div class="results-list">
+      {% for r in rows %}
+        <div class="result-row {% if r.is_self %}result-row--self{% endif %} {% if r.position == 1 %}result-row--first{% endif %}">
+          <div class="result-row__position">
+            <span class="position-pill">#{{ r.position }}</span>
+          </div>
+          {% if r.app.photo_url %}
+            <img class="result-row__photo" src="{{ url_for('static', filename=r.app.photo_url) }}" alt=""/>
+          {% else %}
+            <div></div>
+          {% endif %}
+          <div class="result-row__body">
+            <div class="result-row__name">{{ r.app.full_name }}{% if r.is_self %} (you){% endif %}</div>
+            <div class="muted italic" style="font-size: 0.9rem;">{{ r.app.institution }}</div>
+            <div class="result-row__scores" style="margin-top: 0.5rem;">
+              {% for m in modules %}
+                {% if m.id in r.modules %}
+                  <span class="score-chip">{{ m.name }}: <strong>{{ '%.1f' % r.modules[m.id] }}</strong></span>
+                {% endif %}
+              {% endfor %}
+            </div>
+          </div>
+          <div class="result-row__totals">
+            <div class="result-total">
+              <div class="result-total__big">{{ '%.1f' % r.total }}</div>
+              <div class="muted italic" style="font-size: 0.78rem;">{{ r.module_count }} mod.</div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Judge · Digital Adjudicator{% endblock %}
+
+{% block content %}
+<div class="container">
+  <section class="dashboard-greeting">
+    <div class="eyebrow">Judge</div>
+    <h1>Welcome, {{ current_user.full_name.split(' ')[0] if current_user.full_name else current_user.username }}.</h1>
+    <p class="quote">"The gavel waits."</p>
+  </section>
+
+  {% if modules %}
+    <section class="section-bar">
+      <h2 class="section-title">Your Modules</h2>
+    </section>
+
+    <div class="comp-grid">
+      {% for m in modules %}
+        <a href="{{ url_for('judge.module_view', module_id=m.id) }}" class="comp-card">
+          <div class="comp-card__chip chip chip--{{ m.status }} chip--small">{{ m.status_label }}</div>
+          <h3 class="comp-card__title">{{ m.name }}</h3>
+          <p class="comp-card__meta">
+            <em>{{ m.competition.name }}</em>
+          </p>
+          <div class="comp-card__stats">
+            <span><strong>{{ m.topics | length }}</strong> topic{{ '' if m.topics|length == 1 else 's' }}</span>
+            <span><strong>{{ m.judges | length }}</strong> judge{{ '' if m.judges|length == 1 else 's' }}</span>
+          </div>
+          {% if m.status == 'current' %}
+            <div class="comp-card__format"><em style="color: var(--gold);">→ Open live view</em></div>
+          {% elif m.description %}
+            <div class="comp-card__format"><em>{{ m.description[:120] }}{% if m.description|length > 120 %}…{% endif %}</em></div>
+          {% endif %}
+        </a>
+      {% endfor %}
+    </div>
+
+    <!-- Announcements for the modules this judge is assigned to -->
+    <section class="section-bar" style="margin-top: 3rem;">
+      <h2 class="section-title">Announcements</h2>
+    </section>
+
+    {% set has_any = false %}
+    {% for c in competitions %}
+      {% for a in c.announcements %}
+        {% if a.module_id is none or a.module in modules %}
+          {% set has_any = true %}
+          <div class="card card--soft" style="margin-bottom: 1rem;">
+            <div class="eyebrow">{{ c.name }}{% if a.module %} · {{ a.module.name }}{% endif %}</div>
+            <h4 style="margin: 0.4rem 0;">{{ a.title }}</h4>
+            {% if a.body %}<p class="muted italic">{{ a.body }}</p>{% endif %}
+            <p class="muted italic" style="font-size: 0.85rem; margin-top: 0.4rem;">
+              Posted {{ a.created_at.strftime('%d %b %Y at %H:%M') }}
+            </p>
+          </div>
+        {% endif %}
+      {% endfor %}
+    {% endfor %}
+
+    {% if not has_any %}
+      <div class="card card--soft">
+        <p class="muted italic" style="text-align: center;">
+          No announcements yet. Anything posted by an admin will appear here.
+        </p>
+      </div>
+    {% endif %}
+  {% else %}
+    <div class="empty-state">
+      <div class="ornament">❦</div>
+      <p>You have not been assigned to any module yet.</p>
+      <p class="muted italic">The competition admin will assign you when they are ready.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

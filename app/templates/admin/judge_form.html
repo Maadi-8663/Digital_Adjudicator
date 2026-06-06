@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Add Judge · {{ m.name }}{% endblock %}
+
+{% block content %}
+<div class="container container--narrow">
+  <div class="back-link">
+    <a href="{{ url_for('admin.module_detail', competition_id=t.id, module_id=m.id) }}">← Back to {{ m.name }}</a>
+  </div>
+
+  <div class="card">
+    <div class="eyebrow" style="text-align: center;">{{ m.name }}</div>
+    <h2 class="card-title">Add a Judge</h2>
+    <p class="card-subtitle">Judges do not register themselves. Create their account here and hand them the credentials in person.</p>
+
+    <div class="ornament-rule">❦</div>
+
+    <!-- Create a brand new judge -->
+    <form method="POST" novalidate>
+      {{ new_form.hidden_tag() }}
+
+      <div class="form-group">
+        {{ new_form.full_name.label }}
+        {{ new_form.full_name() }}
+        {% if new_form.full_name.errors %}<div class="error">{{ new_form.full_name.errors[0] }}</div>{% endif %}
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          {{ new_form.username.label }}
+          {{ new_form.username() }}
+          {% if new_form.username.errors %}<div class="error">{{ new_form.username.errors[0] }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+          {{ new_form.password.label }}
+          {{ new_form.password() }}
+          {% if new_form.password.errors %}<div class="error">{{ new_form.password.errors[0] }}</div>{% endif %}
+        </div>
+      </div>
+
+      <p class="muted italic" style="font-size: 0.9rem; margin: 0.4rem 0 1rem;">
+        Make a note of the username and password. They will not be shown again, only changed if you say so later.
+      </p>
+
+      <button type="submit" name="new_judge_submit" value="1" class="btn btn-primary btn--block">
+        Create Judge &amp; Add to Module
+      </button>
+    </form>
+
+    {% if pool %}
+      <div class="ornament-rule">or pick one you already have</div>
+
+      <form method="POST" novalidate>
+        {{ existing_form.hidden_tag() }}
+
+        <div class="form-group">
+          {{ existing_form.judge_id.label }}
+          {{ existing_form.judge_id() }}
+        </div>
+
+        <button type="submit" name="assign_submit" value="1" class="btn btn-ghost btn--block">
+          Add Existing Judge to Module
+        </button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

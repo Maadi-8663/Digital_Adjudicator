@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}{{ m.name }} · Results{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="back-link">
+    <a href="{{ url_for('participant.competition_schedule', competition_id=c.id) }}">← Back to {{ c.name }}</a>
+  </div>
+
+  <section class="comp-hero">
+    <div class="eyebrow">{{ c.name }}</div>
+    <h1>{{ m.name }}</h1>
+    <p class="muted italic">{{ m.status_label }}</p>
+  </section>
+
+  {% if my_row and my_row.position %}
+    <div class="card my-result-card">
+      <div class="eyebrow" style="text-align: center;">Your Result</div>
+      <div class="my-position-pill">#{{ my_row.position }}</div>
+      <h2 style="text-align: center; margin-top: 0.5rem;">
+        {{ my_row.total | round(1) }} <span class="muted italic" style="font-size: 0.7em;">total</span>
+      </h2>
+      <p class="muted italic" style="text-align: center;">
+        Out of {{ rows | length }} participant{{ '' if rows|length == 1 else 's' }}
+      </p>
+
+      {% if my_row.feedback %}
+        <div class="divider-thin" style="margin-top: 1.6rem;"></div>
+        <h4 style="text-align: center; margin-bottom: 0.6rem;">Judges' Feedback</h4>
+        {% for fb in my_row.feedback %}
+          <div class="feedback-quote">
+            <p class="italic">"{{ fb }}"</p>
+          </div>
+        {% endfor %}
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <div class="divider-thin"></div>
+
+  <section class="section-bar">
+    <h2 class="section-title">Full Standings</h2>
+  </section>
+
+  <div class="results-list">
+    {% for r in rows %}
+      <div class="result-row {% if r.is_self %}result-row--self{% endif %} {% if r.position == 1 %}result-row--first{% endif %}">
+        <div class="result-row__position">
+          {% if r.position %}
+            <span class="position-pill">#{{ r.position }}</span>
+          {% else %}
+            <span class="muted italic">—</span>
+          {% endif %}
+        </div>
+        {% if r.app.photo_url %}
+          <img class="result-row__photo" src="{{ url_for('static', filename=r.app.photo_url) }}" alt=""/>
+        {% else %}
+          <div></div>
+        {% endif %}
+        <div class="result-row__body">
+          <div class="result-row__name">
+            {{ r.app.full_name }}{% if r.is_self %} (you){% endif %}
+          </div>
+          <div class="muted italic" style="font-size: 0.9rem;">{{ r.app.institution }}</div>
+        </div>
+        <div class="result-row__totals">
+          {% if r.total is not none %}
+            <div class="result-total">
+              <div class="result-total__big">{{ '%.1f' % r.total }}</div>
+              <div class="muted italic" style="font-size: 0.78rem;">{{ r.judge_count }} judge{{ '' if r.judge_count == 1 else 's' }}</div>
+            </div>
+          {% else %}
+            <span class="muted italic">No scores</span>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

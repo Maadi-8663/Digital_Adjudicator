@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Admin · Digital Adjudicator{% endblock %}
+
+{% block content %}
+<div class="container">
+  <section class="dashboard-greeting">
+    <div class="eyebrow">Administrator</div>
+    <h1>Good day, {{ current_user.full_name.split(' ')[0] if current_user.full_name else current_user.username }}.</h1>
+    <p class="quote">"Every competition begins with a single act of organisation."</p>
+  </section>
+
+  <section class="section-bar">
+    <h2 class="section-title">Your Competitions</h2>
+    <a href="{{ url_for('admin.create_competition') }}" class="btn btn-primary btn-compact">
+      Create New Competition
+    </a>
+  </section>
+
+  <div class="divider-thin"></div>
+
+  {% if competitions %}
+    <div class="comp-grid">
+      {% for t in competitions %}
+        <a href="{{ url_for('admin.competition_detail', competition_id=t.id) }}" class="comp-card">
+          <div class="comp-card__chip chip chip--{{ t.status }}">{{ t.status_label }}</div>
+          <h3 class="comp-card__title">{{ t.name }}</h3>
+          <p class="comp-card__meta">
+            {% if t.start_date and t.end_date %}
+              {{ t.start_date.strftime('%d %b %Y') }} &nbsp;—&nbsp; {{ t.end_date.strftime('%d %b %Y') }}
+            {% endif %}
+          </p>
+          <div class="comp-card__stats">
+            <span><strong>{{ t.modules | length }}</strong> module{{ '' if t.modules|length == 1 else 's' }}</span>
+            <span><strong>{{ t.applications | length }}</strong> applicant{{ '' if t.applications|length == 1 else 's' }}</span>
+          </div>
+          {% if t.venue %}
+            <div class="comp-card__format"><em>{{ t.venue }}</em></div>
+          {% endif %}
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <div class="ornament">❦</div>
+      <p>No competitions yet.</p>
+      <p class="muted italic">The hall is quiet. Create your first competition to begin.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

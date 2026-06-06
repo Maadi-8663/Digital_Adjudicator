@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% block title %}Setup · {{ t.name }}{% endblock %}
+
+{% block head_extra %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="back-link">
+    <a href="{{ url_for('admin.competition_detail', competition_id=t.id) }}">← Back to {{ t.name }}</a>
+  </div>
+
+  <section class="comp-hero">
+    <div class="eyebrow">Pre-Start Setup</div>
+    <h1>Arrange the Order</h1>
+    <p class="muted italic" style="max-width: 720px; margin: 1rem auto 0; text-align: center;">
+      Drag a row up or down to change its position. Changes save as you make them.
+    </p>
+  </section>
+
+  <div class="divider-thin"></div>
+
+  <!-- Module precedence -->
+  <section class="section-bar">
+    <h2 class="section-title">Module Precedence</h2>
+    <span id="modules-save-status" class="save-status muted italic"></span>
+  </section>
+  <p class="muted italic" style="margin-bottom: 1rem;">
+    Drag the modules into the order they will run.
+  </p>
+
+  <div id="modules-list" class="drag-list">
+    {% for row in module_rows %}
+      <div class="drag-row module-drag-row" data-id="{{ row.module.id }}">
+        <div class="drag-handle">☰</div>
+        <div class="drag-num">{{ loop.index }}</div>
+        <div class="drag-body">
+          <strong>{{ row.module.name }}</strong>
+          <p class="muted italic" style="font-size: 0.9rem; margin: 0;">
+            {{ row.apps | length }} participant{{ '' if row.apps|length == 1 else 's' }} &nbsp;·&nbsp;
+            {{ row.module.topics | length }} topic{{ '' if row.module.topics|length == 1 else 's' }} &nbsp;·&nbsp;
+            {{ row.module.judges | length }} judge{{ '' if row.module.judges|length == 1 else 's' }}
+          </p>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- Participants per module -->
+  <section class="section-bar" style="margin-top: 3rem;">
+    <h2 class="section-title">Participant Turn Order</h2>
+  </section>
+  <p class="muted italic" style="margin-bottom: 1rem;">
+    For each module, drag participants into the order they will be called to the stage.
+  </p>
+
+  {% for row in module_rows %}
+    <div class="module-panel">
+      <div class="module-panel__head">
+        <h3 class="module-panel__title">{{ row.module.name }}</h3>
+        <span id="participants-save-status-{{ row.module.id }}" class="save-status muted italic"></span>
+      </div>
+      {% if row.apps %}
+        <div id="participants-list-{{ row.module.id }}" class="drag-list" data-module-id="{{ row.module.id }}">
+          {% for app in row.apps %}
+            <div class="drag-row participant-drag-row" data-id="{{ app.id }}">
+              <div class="drag-handle">☰</div>
+              <div class="drag-num"></div>
+              <div class="drag-body">
+                <strong>{{ app.full_name }}</strong>
+                <p class="muted italic" style="font-size: 0.9rem; margin: 0;">{{ app.institution }}</p>
+              </div>
+              {% if app.photo_url %}
+                <img src="{{ url_for('static', filename=app.photo_url) }}" class="drag-photo" alt="" />
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="muted italic" style="text-align: center; padding: 1.5rem 0;">
+          No applicants in this module.
+        </p>
+      {% endif %}
+    </div>
+  {% endfor %}
+
+  <!-- Confirm & Start -->
+  <div class="divider-thin" style="margin-top: 3rem;"></div>
+  <div style="text-align: center; padding: 1.5rem 0;">
+    {% if t.status == "registration_closed" %}
+      <form method="POST" action="{{ url_for('admin.confirm_and_start', competition_id=t.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <button type="submit" class="btn btn-primary"
+                onclick="return confirm('Confirm the order and start the competition? Participants will be notified.');">
+          Confirm Order &amp; Start the Competition
+        </button>
+      </form>
+    {% else %}
+      <p class="muted italic">The competition has already started.</p>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+(function () {
+  const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+  const competitionId = {{ t.id }};
+
+  function showStatus(elementId, text, isError = false) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    el.textContent = text;
+    el.style.color = isError ? 'var(--error)' : 'var(--success)';
+    if (text && !isError) {
+      setTimeout(() => { el.textContent = ''; }, 1800);
+    }
+  }
+
+  function refreshNumbers(listEl) {
+    listEl.querySelectorAll('.drag-row').forEach((row, i) => {
+      const num = row.querySelector('.drag-num');
+      if (num) num.textContent = i + 1;
+    });
+  }
+
+  // ===== Module precedence =====
+  const modulesList = document.getElementById('modules-list');
+  if (modulesList) {
+    Sortable.create(modulesList, {
+      handle: '.drag-handle',
+      animation: 180,
+      ghostClass: 'drag-ghost',
+      onEnd: () => {
+        refreshNumbers(modulesList);
+        const ids = Array.from(modulesList.querySelectorAll('.drag-row'))
+          .map(r => parseInt(r.dataset.id, 10));
+        fetch(`/admin/competition/${competitionId}/setup/modules/reorder`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+          body: JSON.stringify({ ids: ids })
+        })
+        .then(r => r.json())
+        .then(data => {
+          if (data.ok) showStatus('modules-save-status', 'Saved.');
+          else showStatus('modules-save-status', 'Could not save.', true);
+        })
+        .catch(() => showStatus('modules-save-status', 'Could not save.', true));
+      }
+    });
+  }
+
+  // ===== Participants per module =====
+  document.querySelectorAll('[id^="participants-list-"]').forEach(list => {
+    const moduleId = list.dataset.moduleId;
+    refreshNumbers(list);
+    Sortable.create(list, {
+      handle: '.drag-handle',
+      animation: 180,
+      ghostClass: 'drag-ghost',
+      onEnd: () => {
+        refreshNumbers(list);
+        const ids = Array.from(list.querySelectorAll('.drag-row'))
+          .map(r => parseInt(r.dataset.id, 10));
+        fetch(`/admin/competition/${competitionId}/setup/module/${moduleId}/participants/reorder`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+          body: JSON.stringify({ ids: ids })
+        })
+        .then(r => r.json())
+        .then(data => {
+          const statusId = `participants-save-status-${moduleId}`;
+          if (data.ok) showStatus(statusId, 'Saved.');
+          else showStatus(statusId, 'Could not save.', true);
+        })
+        .catch(() => showStatus(`participants-save-status-${moduleId}`, 'Could not save.', true));
+      }
+    });
+  });
+})();
+</script>
+{% endblock %}

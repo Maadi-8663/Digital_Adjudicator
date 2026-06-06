@@ -1,0 +1,30 @@
+# Render Blueprint - Digital Adjudicator
+# Reference: https://render.com/docs/blueprint-spec
+
+databases:
+  - name: digital-adjudicator-db
+    databaseName: digital_adjudicator
+    plan: free
+    region: oregon
+
+services:
+  - type: web
+    name: digital-adjudicator
+    runtime: python
+    region: oregon
+    plan: free
+    branch: main
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt && python seed_test_users.py
+    startCommand: gunicorn --workers 2 --threads 4 --timeout 60 run:app
+    healthCheckPath: /auth/login
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.10"
+      - key: FLASK_CONFIG
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: digital-adjudicator-db
+          property: connectionString

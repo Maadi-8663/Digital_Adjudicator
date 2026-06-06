@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Sign In · Digital Adjudicator{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+  <div class="card">
+    <div class="auth-logo">
+      <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="" />
+    </div>
+    <div class="eyebrow" style="text-align: center;">Welcome Back</div>
+    <h2 class="card-title">Digital Adjudicator</h2>
+    <p class="card-subtitle">A quiet companion for the debating hall</p>
+
+    <div class="ornament-rule">❦</div>
+
+    <form method="POST" action="{{ url_for('auth.login') }}" novalidate>
+      {{ form.hidden_tag() }}
+
+      <div class="form-group">
+        {{ form.username.label }}
+        {{ form.username() }}
+        {% if form.username.errors %}
+          <div class="error">{{ form.username.errors[0] }}</div>
+        {% endif %}
+      </div>
+
+      <div class="form-group">
+        {{ form.password.label }}
+        {{ form.password() }}
+        {% if form.password.errors %}
+          <div class="error">{{ form.password.errors[0] }}</div>
+        {% endif %}
+      </div>
+
+      <button type="submit" class="btn btn-primary btn--block">Sign In</button>
+    </form>
+
+    <p class="auth-link">
+      New to the hall? <a href="{{ url_for('auth.register') }}">Create an account</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

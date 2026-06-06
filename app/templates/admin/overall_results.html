@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Overall Standings · {{ t.name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="back-link">
+    <a href="{{ url_for('admin.competition_detail', competition_id=t.id) }}">← Back to {{ t.name }}</a>
+  </div>
+
+  <section class="comp-hero">
+    <div class="eyebrow">Overall Standings</div>
+    <h1>{{ t.name }}</h1>
+    <p class="muted italic">{{ t.status_label }} · {{ modules | length }} module{{ '' if modules|length == 1 else 's' }}</p>
+  </section>
+
+  <div class="divider-thin"></div>
+
+  {% if not rows %}
+    <div class="empty-state">
+      <div class="ornament">❦</div>
+      <p>No results yet.</p>
+      <p class="muted italic">Once at least one module finishes with scores, the overall standings will appear here.</p>
+    </div>
+  {% else %}
+    <div class="results-list">
+      {% for r in rows %}
+        <div class="result-row {% if r.position == 1 %}result-row--first{% endif %}">
+          <div class="result-row__position">
+            <span class="position-pill">#{{ r.position }}</span>
+          </div>
+          {% if r.app.photo_url %}
+            <img class="result-row__photo" src="{{ url_for('static', filename=r.app.photo_url) }}" alt=""/>
+          {% else %}
+            <div></div>
+          {% endif %}
+          <div class="result-row__body">
+            <div class="result-row__name">{{ r.app.full_name }}</div>
+            <div class="muted italic" style="font-size: 0.9rem;">{{ r.app.institution }}</div>
+            <div class="result-row__scores" style="margin-top: 0.5rem;">
+              {% for m in modules %}
+                {% if m.id in r.modules %}
+                  <span class="score-chip">{{ m.name }}: <strong>{{ '%.1f' % r.modules[m.id] }}</strong></span>
+                {% endif %}
+              {% endfor %}
+            </div>
+          </div>
+          <div class="result-row__totals">
+            <div class="result-total">
+              <div class="result-total__big">{{ '%.1f' % r.total }}</div>
+              <div class="muted italic" style="font-size: 0.78rem;">
+                Total · {{ r.module_count }} module{{ '' if r.module_count == 1 else 's' }}
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <p class="muted italic" style="text-align: center; margin-top: 2rem; font-size: 0.95rem;">
+      Overall standings are computed as the sum of every module total across all modules a participant competed in.
+    </p>
+  {% endif %}
+</div>
+{% endblock %}
